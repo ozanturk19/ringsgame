@@ -9,6 +9,7 @@ interface TubeProps {
   isHintFrom: boolean
   isHintTo: boolean
   isComplete: boolean
+  celebrating?: boolean
   onClick: (index: number) => void
   entranceDelay?: number
   size?: 'sm' | 'md' | 'lg'
@@ -26,6 +27,7 @@ export function Tube({
   isHintFrom,
   isHintTo,
   isComplete,
+  celebrating = false,
   onClick,
   entranceDelay = 0,
   size = 'md',
@@ -64,6 +66,7 @@ export function Tube({
         'animate-tube-enter',
         isShaking ? 'animate-shake' : '',
         tube.locked ? 'cursor-not-allowed' : '',
+        celebrating ? 'tube-celebrating' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -75,7 +78,9 @@ export function Tube({
         border: `2px solid ${borderColor}`,
         background: 'rgba(255,255,255,0.05)',
         backdropFilter: 'blur(6px)',
-        boxShadow: glowColor !== 'transparent'
+        boxShadow: celebrating
+          ? '0 0 20px rgba(16,185,129,0.6), inset 0 0 12px rgba(255,255,255,0.03)'
+          : glowColor !== 'transparent'
           ? `0 0 18px 5px ${glowColor}, inset 0 0 12px rgba(255,255,255,0.03)`
           : 'inset 0 0 12px rgba(255,255,255,0.03)',
         transform: isSelected ? 'scale(1.04) translateY(-2px)' : 'scale(1) translateY(0)',

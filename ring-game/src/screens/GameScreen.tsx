@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { getMoveCount, calculateStars, isTubeComplete } from '../game/engine'
 import { getLevel } from '../game/levels'
@@ -36,6 +36,8 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
   const { play } = useSound()
   const prevMoveCount = useRef(0)
   const prevPhase = useRef(phase)
+  const [celebrating, setCelebrating] = useState(false)
+  const [showWinOverlay, setShowWinOverlay] = useState(false)
 
   useEffect(() => {
     loadLevel(levelId)
@@ -52,6 +54,18 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
     if (phase === 'LEVEL_COMPLETE' && prevPhase.current !== 'LEVEL_COMPLETE') play('win')
     prevPhase.current = phase
   }, [phase, gameState])
+
+  useEffect(() => {
+    if (phase === 'LEVEL_COMPLETE') {
+      setCelebrating(true)
+      setShowWinOverlay(false)
+      const timer = setTimeout(() => setShowWinOverlay(true), 350)
+      return () => clearTimeout(timer)
+    } else {
+      setCelebrating(false)
+      setShowWinOverlay(false)
+    }
+  }, [phase])
 
   if (!gameState) return null
 
@@ -93,6 +107,7 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
               isHintFrom={hintTubeFrom === i}
               isHintTo={hintTubeTo === i}
               isComplete={isTubeComplete(tube)}
+              celebrating={celebrating}
               onClick={(idx) => { clearHint(); selectTube(idx) }}
               entranceDelay={i * ANIM.LEVEL_ENTRANCE_STAGGER}
               size={tubeSize}
@@ -112,7 +127,7 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
         onSkip={skip}
       />
 
-      {phase === 'LEVEL_COMPLETE' && (
+      {showWinOverlay && (
         <WinOverlay
           levelId={levelId}
           stars={stars}

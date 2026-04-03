@@ -20,6 +20,14 @@ export function setMuted(v: boolean) {
 
 export function getMuted(): boolean { return isMuted() }
 
+function vibrate(pattern: number | number[]) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(pattern)
+    }
+  } catch { /* ignore */ }
+}
+
 let sharedCtx: AudioContext | null = null
 
 function getCtx(): AudioContext | null {
@@ -101,6 +109,11 @@ export function useSound() {
     const ctx = getCtx()
     if (!ctx) return
     try { SOUND_FNS[sound](ctx) } catch { /* ignore */ }
+    if (sound === 'pick') vibrate(10)
+    else if (sound === 'place') vibrate([10, 20, 15])
+    else if (sound === 'invalid') vibrate([30, 20, 30])
+    else if (sound === 'win') vibrate([50, 30, 80, 30, 120])
+    else if (sound === 'star') vibrate(20)
   }, [])
 
   const toggleMute = useCallback(() => {
