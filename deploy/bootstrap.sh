@@ -25,30 +25,83 @@ echo -e "${BOLD}║   Halka Oyunu — Tam Otomatik Kurulum      ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════╝${NC}"
 echo ""
 
-# ── Ön kontroller ─────────────────────────────────────────────────────────────
-step "Gereksinimler kontrol ediliyor"
-for cmd in ssh ssh-keygen rsync curl; do
-  command -v "$cmd" &>/dev/null && success "$cmd" || die "$cmd bulunamadı"
+# ── Temel araçlar ─────────────────────────────────────────────────────────────
+step "Temel araçlar kontrol ediliyor"
+for cmd in ssh ssh-keygen rsync curl git; do
+  command -v "$cmd" &>/dev/null && success "$cmd" || die "$cmd bulunamadı — lütfen yükle"
 done
 
-# gh CLI kontrolü — secret eklemek için şart
-if ! command -v gh &>/dev/null; then
-  warn "gh (GitHub CLI) bulunamadı. Yüklemek için:"
-  echo "  macOS : brew install gh"
-  echo "  Linux : https://cli.github.com/manual/installation"
-  read -rp "gh kurulumu tamamlandıktan sonra devam etmek için Enter'a bas..." _
-  command -v gh &>/dev/null || die "gh hâlâ bulunamadı"
+# ── gh CLI otomatik kurulumu ──────────────────────────────────────────────────
+step "GitHub CLI (gh) kuruluyor"
+
+install_gh() {
+  local os
+  os="$(uname -s)"
+
+  if [[ "$os" == "Darwin" ]]; then
+    if command -v brew &>/dev/null; then
+      info "Homebrew ile gh kuruluyor..."
+      brew install gh
+    else
+      # Homebrew yoksa direkt binary
+      info "Homebrew bulunamadı, binary indiriliyor..."
+      GH_VER=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | tr -d v)
+      curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VER}/gh_${GH_VER}_macOS_amd64.tar.gz" \
+        | tar -xz -C /tmp
+      sudo mv "/tmp/gh_${GH_VER}_macOS_amd64/bin/gh" /usr/local/bin/gh
+    fi
+
+  elif [[ "$os" == "Linux" ]]; then
+    if command -v apt-get &>/dev/null; then
+      info "apt ile gh kuruluyor..."
+      curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
+        https://cli.github.com/packages stable main" \
+        | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+      sudo apt-get update -q
+      sudo apt-get install -y gh
+    elif command -v dnf &>/dev/null; then
+      info "dnf ile gh kuruluyor..."
+      sudo dnf install -y 'dnf-command(config-manager)'
+      sudo dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+      sudo dnf install -y gh
+    elif command -v yum &>/dev/null; then
+      sudo yum install -y gh
+    else
+      # Fallback: binary
+      info "Binary olarak indiriliyor..."
+      GH_VER=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | tr -d v)
+      ARCH=$(uname -m); [[ "$ARCH" == "x86_64" ]] && ARCH="amd64"
+      curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VER}/gh_${GH_VER}_linux_${ARCH}.tar.gz" \
+        | tar -xz -C /tmp
+      sudo mv "/tmp/gh_${GH_VER}_linux_${ARCH}/bin/gh" /usr/local/bin/gh
+    fi
+  else
+    die "Desteklenmeyen işletim sistemi: $os"
+  fi
+}
+
+if command -v gh &>/dev/null; then
+  success "gh zaten kurulu: $(gh --version | head -1)"
+else
+  install_gh
+  command -v gh &>/dev/null && success "gh kuruldu" || die "gh kurulumu başarısız"
 fi
 
-# GitHub auth kontrolü
-gh auth status &>/dev/null || { warn "GitHub'a giriş yapılıyor..."; gh auth login; }
+# ── GitHub auth ───────────────────────────────────────────────────────────────
+step "GitHub girişi"
+if ! gh auth status &>/dev/null; then
+  info "GitHub'a giriş yapılıyor (tarayıcı açılacak)..."
+  gh auth login --hostname github.com --git-protocol https --web
+fi
 success "GitHub auth OK"
 
-# VPS erişim kontrolü
+# ── VPS bağlantı testi ────────────────────────────────────────────────────────
 step "VPS bağlantısı test ediliyor ($VPS_HOST:$VPS_PORT)"
-timeout 8 bash -c "echo >/dev/tcp/$VPS_HOST/$VPS_PORT" 2>/dev/null \
+timeout 10 bash -c "echo >/dev/tcp/$VPS_HOST/$VPS_PORT" 2>/dev/null \
   && success "Port $VPS_PORT erişilebilir" \
-  || die "Port $VPS_PORT erişilemiyor. VPS'in açık ve SSH'ın $VPS_PORT'ta çalıştığını kontrol et."
+  || die "Port $VPS_PORT erişilemiyor. VPS'in açık olduğunu kontrol et."
 
 # ── SSH Deploy Key ─────────────────────────────────────────────────────────────
 step "SSH deploy key"
@@ -63,63 +116,55 @@ PUB_KEY=$(cat "${KEY_PATH}.pub")
 PRIV_KEY=$(cat "$KEY_PATH")
 
 # ── VPS Kurulumu ──────────────────────────────────────────────────────────────
-step "VPS kurulumu ($VPS_USER@$VPS_HOST:$VPS_PORT)"
+step "VPS kurulumu ($VPS_HOST:$VPS_PORT)"
 
-# Public key VPS'e gönder
-info "Public key VPS'e ekleniyor..."
+info "Deploy public key VPS'e ekleniyor..."
 ssh -p "$VPS_PORT" \
     -o StrictHostKeyChecking=no \
     -o ConnectTimeout=15 \
     "$VPS_USER@$VPS_HOST" \
-    "mkdir -p ~/.ssh && chmod 700 ~/.ssh && \
-     grep -qF 'halka-deploy@github-actions' ~/.ssh/authorized_keys 2>/dev/null || \
-     echo '$PUB_KEY' >> ~/.ssh/authorized_keys && \
-     chmod 600 ~/.ssh/authorized_keys"
+    "mkdir -p ~/.ssh && chmod 700 ~/.ssh
+     grep -qF 'halka-deploy@github-actions' ~/.ssh/authorized_keys 2>/dev/null \
+       || echo '$PUB_KEY' >> ~/.ssh/authorized_keys
+     chmod 600 ~/.ssh/authorized_keys
+     echo 'Key eklendi'"
 success "Deploy public key VPS'e eklendi"
 
-# VPS'te kurulum scriptini çalıştır
 info "VPS kurulum scripti çalıştırılıyor (nginx, ufw, webroot)..."
-ssh -p "$VPS_PORT" \
-    -o StrictHostKeyChecking=no \
-    "$VPS_USER@$VPS_HOST" \
-    "curl -fsSL https://raw.githubusercontent.com/$GITHUB_REPO/main/deploy/setup-vps.sh | bash"
+ssh -p "$VPS_PORT" -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" \
+  "curl -fsSL https://raw.githubusercontent.com/$GITHUB_REPO/main/deploy/setup-vps.sh | bash"
 success "VPS kurulumu tamamlandı"
 
 # ── GitHub Secrets ─────────────────────────────────────────────────────────────
-step "GitHub Secrets ekleniyor ($GITHUB_REPO)"
+step "GitHub Secrets ekleniyor"
 gh secret set VPS_SSH_KEY  --body "$PRIV_KEY"  --repo "$GITHUB_REPO"
 gh secret set VPS_HOST     --body "$VPS_HOST"  --repo "$GITHUB_REPO"
 gh secret set VPS_USER     --body "$VPS_USER"  --repo "$GITHUB_REPO"
 gh secret set VPS_SSH_PORT --body "$VPS_PORT"  --repo "$GITHUB_REPO"
-success "4 secret eklendi (VPS_SSH_KEY, VPS_HOST, VPS_USER, VPS_SSH_PORT)"
+success "4 secret eklendi"
 
-# ── İlk Deploy ────────────────────────────────────────────────────────────────
-step "İlk deploy tetikleniyor"
+# ── Build + Deploy ────────────────────────────────────────────────────────────
+step "İlk build ve deploy"
 
-# Repo yoksa klonla
 REPO_DIR="/tmp/ringsgame-bootstrap"
-if [[ ! -d "$REPO_DIR" ]]; then
-  info "Repo klonlanıyor..."
-  git clone "https://github.com/$GITHUB_REPO.git" "$REPO_DIR"
-fi
+rm -rf "$REPO_DIR"
+info "Repo klonlanıyor..."
+git clone "https://github.com/$GITHUB_REPO.git" "$REPO_DIR" --depth 1
 
-info "Build + rsync ile doğrudan deploy..."
-(
-  cd "$REPO_DIR/ring-game"
-  npm ci --silent
-  npm run build --silent
-)
+info "npm build yapılıyor..."
+(cd "$REPO_DIR/ring-game" && npm ci --silent && npm run build --silent)
 
+info "VPS'e rsync ile gönderiliyor..."
 rsync -az --delete --checksum \
   -e "ssh -i $KEY_PATH -p $VPS_PORT -o StrictHostKeyChecking=no" \
   "$REPO_DIR/ring-game/dist/" \
   "$VPS_USER@$VPS_HOST:/var/www/ring-game/"
 
-# Doğrula
 ssh -i "$KEY_PATH" -p "$VPS_PORT" -o StrictHostKeyChecking=no \
-  "$VPS_USER@$VPS_HOST" \
-  "ls /var/www/ring-game/index.html"
+  "$VPS_USER@$VPS_HOST" "ls /var/www/ring-game/index.html"
 success "Deploy tamamlandı"
+
+rm -rf "$REPO_DIR"
 
 # ── Özet ─────────────────────────────────────────────────────────────────────
 echo ""
@@ -127,12 +172,9 @@ echo -e "${BOLD}╔════════════════════�
 echo -e "${BOLD}║              Kurulum Tamamlandı! 🎉                   ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "  ${GREEN}Oyun       :${NC} http://$VPS_HOST"
-echo -e "  ${GREEN}GitHub     :${NC} https://github.com/$GITHUB_REPO/actions"
-echo -e "  ${GREEN}Deploy Key :${NC} $KEY_PATH"
+echo -e "  ${GREEN}Oyun adresi  :${NC} http://$VPS_HOST"
+echo -e "  ${GREEN}GitHub CI/CD :${NC} https://github.com/$GITHUB_REPO/actions"
+echo -e "  ${GREEN}Deploy key   :${NC} $KEY_PATH"
 echo ""
-echo -e "  ${CYAN}Bundan sonra:${NC} main'e her git push → otomatik deploy"
+echo -e "  ${CYAN}Bundan sonra:${NC} git push origin main → otomatik deploy"
 echo ""
-
-# Temizle
-rm -rf "$REPO_DIR"
