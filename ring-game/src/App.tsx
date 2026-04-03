@@ -4,6 +4,7 @@ import { LevelMap } from './screens/LevelMap'
 import { GameScreen } from './screens/GameScreen'
 import { DailyScreen } from './screens/DailyScreen'
 import { StatsScreen } from './screens/StatsScreen'
+import { TimedModeScreen } from './screens/TimedModeScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { useProgressStore } from './store/progressStore'
 import { useScreenTransition } from './hooks/useScreenTransition'
@@ -47,6 +48,7 @@ export default function App() {
               onMap={() => navigate('levelMap')}
               onDaily={() => navigate('daily' as Screen)}
               onStats={() => navigate('stats')}
+              onTimed={() => navigate('timed')}
             />
           </div>
         )}
@@ -75,6 +77,11 @@ export default function App() {
         {screen === 'stats' && (
           <div key="stats" className={transitionClass}>
             <StatsScreen onBack={() => navigate('home')} />
+          </div>
+        )}
+        {screen === 'timed' && (
+          <div key="timed" className={transitionClass}>
+            <TimedModeScreen onBack={() => navigate('home')} />
           </div>
         )}
       </div>

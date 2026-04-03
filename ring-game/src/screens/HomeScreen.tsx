@@ -10,6 +10,7 @@ interface HomeScreenProps {
   onMap: () => void
   onDaily: () => void
   onStats: () => void
+  onTimed: () => void
 }
 
 const LOGO_COLORS = [
@@ -19,7 +20,7 @@ const LOGO_COLORS = [
   { id: 'yellow', hex: '#EAB308' },
 ]
 
-export function HomeScreen({ onPlay, onMap, onDaily, onStats }: HomeScreenProps) {
+export function HomeScreen({ onPlay, onMap, onDaily, onStats, onTimed }: HomeScreenProps) {
   const { levels } = useProgressStore()
   const [muted, setMutedState] = useState(getMuted())
   const dailyRecord = getDailyRecord()
@@ -139,6 +140,17 @@ export function HomeScreen({ onPlay, onMap, onDaily, onStats }: HomeScreenProps)
           {dailyRecord?.completed
             ? `✅  Günlük Tamamlandı ${dailyRecord.stars}⭐`
             : '🌟  Günlük Bulmaca'}
+        </button>
+
+        <button
+          onClick={onTimed}
+          className="w-full py-4 rounded-3xl font-semibold text-lg active:scale-95 transition-all duration-150"
+          style={{
+            background: 'rgba(239,68,68,0.12)',
+            border: '1px solid rgba(239,68,68,0.35)',
+          }}
+        >
+          ⏱  Hızlı Mod
         </button>
 
         <button

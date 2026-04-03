@@ -66,7 +66,7 @@ export interface ProgressState {
 
 // ─── UI State ─────────────────────────────────────────────────────────────────
 
-export type Screen = 'home' | 'levelMap' | 'game' | 'stats'
+export type Screen = 'home' | 'levelMap' | 'game' | 'stats' | 'timed'
 
 export type GamePhase =
   | 'IDLE'
