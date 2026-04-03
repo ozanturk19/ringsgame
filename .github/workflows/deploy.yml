@@ -63,7 +63,7 @@ jobs:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_HOST: ${{ secrets.VPS_HOST || '135.181.206.109' }}
           VPS_USER: ${{ secrets.VPS_USER || 'root' }}
-          SSH_PORT: ${{ secrets.VPS_SSH_PORT || '8006' }}
+          SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key

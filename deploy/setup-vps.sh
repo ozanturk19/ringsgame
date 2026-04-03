@@ -21,7 +21,7 @@ DEPLOY_PUBLIC_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM+5VMkLJfvuyJMgkKIhDTWta
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║     Halka Oyunu — VPS Kurulum             ║"
-echo "║     135.181.206.109:8006                  ║"
+echo "║     135.181.206.109:22                    ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
