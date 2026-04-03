@@ -27,7 +27,7 @@ echo ""
 
 # ── Temel araçlar ─────────────────────────────────────────────────────────────
 step "Temel araçlar kontrol ediliyor"
-for cmd in ssh ssh-keygen rsync curl git; do
+for cmd in ssh ssh-keygen rsync curl git nc; do
   command -v "$cmd" &>/dev/null && success "$cmd" || die "$cmd bulunamadı — lütfen yükle"
 done
 
@@ -104,9 +104,9 @@ find_ssh_port() {
   local common_ports=(22 2222 2200 4022 8022 8006 1022 10022)
   for p in "${common_ports[@]}"; do
     info "Port $p deneniyor..."
-    if timeout 5 bash -c "echo >/dev/tcp/$VPS_HOST/$p" 2>/dev/null; then
-      # Gerçekten SSH mi?
-      banner=$(timeout 5 bash -c "cat < /dev/tcp/$VPS_HOST/$p" 2>/dev/null | head -1 || true)
+    if nc -z -w5 "$VPS_HOST" "$p" 2>/dev/null; then
+      # Gerçekten SSH mi? — banner oku
+      banner=$(nc -w5 "$VPS_HOST" "$p" 2>/dev/null </dev/null | head -1 || true)
       if echo "$banner" | grep -qi "ssh"; then
         echo "$p"
         return 0
@@ -134,8 +134,8 @@ if [[ -z "$VPS_PORT" ]]; then
 fi
 
 info "SSH bağlantısı deneniyor ($VPS_HOST:$VPS_PORT)..."
-# TCP probe (bazı firewall'lar bunu engeller, sadece uyarı)
-if timeout 8 bash -c "echo >/dev/tcp/$VPS_HOST/$VPS_PORT" 2>/dev/null; then
+# nc hem macOS hem Linux'ta çalışır (timeout komutu macOS'ta yok)
+if nc -z -w8 "$VPS_HOST" "$VPS_PORT" 2>/dev/null; then
   success "Port $VPS_PORT erişilebilir"
 else
   warn "TCP probe başarısız — SSH doğrudan deneniyor..."
