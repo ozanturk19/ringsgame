@@ -1,0 +1,2 @@
+# ringsgame
+oyun tasarımı
