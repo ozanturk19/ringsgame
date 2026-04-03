@@ -78,6 +78,18 @@ html, body {
   animation: star-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* Ring settle bounce on placement */
+@keyframes ring-settle {
+  0%   { transform: translateY(-12px) scaleY(0.92); }
+  50%  { transform: translateY(3px)   scaleY(1.04); }
+  75%  { transform: translateY(-2px)  scaleY(0.98); }
+  100% { transform: translateY(0)     scaleY(1); }
+}
+
+.animate-ring-settle {
+  animation: ring-settle 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 /* ── Scrollbar ────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -86,4 +98,22 @@ html, body {
 /* ── iOS PWA safe area ────────────────────────────────────────────── */
 @supports (padding: env(safe-area-inset-bottom)) {
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* ── Responsive tube layout helpers ──────────────────────────────── */
+@media (max-width: 374px) {
+  /* Very small phones: tighter gaps */
+  .tube-grid { gap: 6px !important; }
+}
+
+@media (min-width: 768px) {
+  /* Tablet/Desktop: wider game area */
+  .game-area { max-width: 640px; margin: 0 auto; }
+}
+
+/* ── Touch feedback ───────────────────────────────────────────────── */
+button, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }

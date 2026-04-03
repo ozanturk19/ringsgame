@@ -1,80 +1,140 @@
+import { useState } from 'react'
 import { useProgressStore } from '../store/progressStore'
 import { getTotalLevels } from '../game/levels'
+import { getMuted, setMuted } from '../hooks/useSound'
 
 interface HomeScreenProps {
   onPlay: () => void
   onMap: () => void
 }
 
+const LOGO_COLORS = [
+  { id: 'red',    hex: '#EF4444' },
+  { id: 'green',  hex: '#22C55E' },
+  { id: 'blue',   hex: '#3B82F6' },
+  { id: 'yellow', hex: '#EAB308' },
+]
+
 export function HomeScreen({ onPlay, onMap }: HomeScreenProps) {
   const { levels } = useProgressStore()
+  const [muted, setMutedState] = useState(getMuted())
 
   const completedCount = Object.values(levels).filter(l => l.completed).length
   const totalLevels = getTotalLevels()
   const progressPercent = Math.round((completedCount / totalLevels) * 100)
 
+  function toggleMute() {
+    const next = !muted
+    setMuted(next)
+    setMutedState(next)
+  }
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-white">
-      {/* Logo / Title */}
-      <div className="flex flex-col items-center gap-3 mb-12">
-        <div className="flex gap-2 mb-2">
-          {['red', 'green', 'blue', 'yellow'].map((c, i) => (
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 text-white relative overflow-hidden">
+
+      {/* Decorative background orbs */}
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+      <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%)', filter: 'blur(32px)' }} />
+
+      {/* Mute toggle */}
+      <button
+        onClick={toggleMute}
+        className="absolute top-5 right-5 text-2xl text-white/40 hover:text-white/70 transition-colors"
+        aria-label={muted ? 'Sesi aç' : 'Sesi kapat'}
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
+
+      {/* Logo */}
+      <div className="flex flex-col items-center gap-4 mb-10">
+        {/* Animated rings */}
+        <div className="flex gap-2 mb-1">
+          {LOGO_COLORS.map((c, i) => (
             <div
-              key={c}
-              className="w-8 h-8 rounded-full border-4 border-white/30"
+              key={c.id}
+              className="rounded-full border-[5px] border-white/20 shadow-lg"
               style={{
-                background: {
-                  red: '#EF4444',
-                  green: '#22C55E',
-                  blue: '#3B82F6',
-                  yellow: '#EAB308',
-                }[c],
-                animationDelay: `${i * 150}ms`,
+                width: 36,
+                height: 36,
+                background: `radial-gradient(circle at 35% 35%, ${c.hex}dd, ${c.hex})`,
+                boxShadow: `0 4px 12px ${c.hex}55`,
+                animation: `float 2.4s ease-in-out ${i * 0.2}s infinite alternate`,
               }}
             />
           ))}
         </div>
-        <h1 className="text-5xl font-black tracking-tight">Halka</h1>
-        <p className="text-white/50 text-lg font-medium">Renkleri Sırala!</p>
+
+        <h1
+          className="text-6xl font-black tracking-tight"
+          style={{ textShadow: '0 2px 20px rgba(99,102,241,0.5)' }}
+        >
+          Halka
+        </h1>
+        <p className="text-white/50 text-base font-medium tracking-widest uppercase">
+          Renkleri Sırala
+        </p>
       </div>
 
-      {/* Progress pill */}
+      {/* Progress bar */}
       {completedCount > 0 && (
-        <div className="mb-8 flex flex-col items-center gap-2 w-full max-w-xs">
-          <div className="flex justify-between w-full text-sm text-white/60">
+        <div className="mb-8 w-full max-w-xs">
+          <div className="flex justify-between text-sm text-white/50 mb-2">
             <span>{completedCount} / {totalLevels} tamamlandı</span>
-            <span>%{progressPercent}</span>
+            <span className="text-emerald-400 font-semibold">%{progressPercent}</span>
           </div>
-          <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+          <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
             <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full transition-all duration-700"
-              style={{ width: `${progressPercent}%` }}
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${progressPercent}%`,
+                background: 'linear-gradient(90deg, #10b981, #06b6d4)',
+                boxShadow: '0 0 8px rgba(16,185,129,0.6)',
+              }}
             />
           </div>
         </div>
       )}
 
-      {/* Main CTA */}
-      <div className="flex flex-col gap-4 w-full max-w-xs">
+      {/* CTA Buttons */}
+      <div className="flex flex-col gap-3 w-full max-w-xs">
         <button
           onClick={onPlay}
-          className="w-full py-5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 active:scale-95 rounded-3xl font-bold text-xl shadow-lg shadow-emerald-900/40 transition-all duration-150"
+          className="relative w-full py-5 rounded-3xl font-bold text-xl active:scale-95 transition-all duration-150 overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #10b981, #06b6d4)',
+            boxShadow: '0 8px 24px rgba(16,185,129,0.35), 0 2px 6px rgba(0,0,0,0.3)',
+          }}
         >
-          {completedCount === 0 ? '🎮 Oyna!' : '▶ Devam Et'}
+          <span className="relative z-10">
+            {completedCount === 0 ? '🎮  Oyna!' : '▶  Devam Et'}
+          </span>
+          {/* Shine sweep */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%)' }} />
         </button>
 
         <button
           onClick={onMap}
-          className="w-full py-4 bg-white/10 hover:bg-white/20 active:scale-95 rounded-3xl font-semibold text-lg transition-all duration-150"
+          className="w-full py-4 rounded-3xl font-semibold text-lg active:scale-95 transition-all duration-150"
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
         >
-          🗺 Level Haritası
+          🗺  Level Haritası
         </button>
       </div>
 
       {/* Footer */}
-      <p className="absolute bottom-6 text-white/20 text-xs">
+      <p className="absolute bottom-safe bottom-5 text-white/15 text-xs text-center">
         Reklamsız · Ücretsiz · Çocuklar için
       </p>
+
+      <style>{`
+        @keyframes float {
+          from { transform: translateY(0px); }
+          to   { transform: translateY(-6px); }
+        }
+      `}</style>
     </div>
   )
 }
