@@ -32,7 +32,20 @@ function defaultState(): ProgressState {
     levels: {},
     unlockedThemes: ['default'],
     currentLevel: 1,
+    dailyStreak: 0,
+    bestStreak: 0,
+    lastPlayedDate: '',
   }
+}
+
+function toDateString(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+function yesterday(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return toDateString(d)
 }
 
 interface ProgressStore extends ProgressState {
@@ -41,6 +54,7 @@ interface ProgressStore extends ProgressState {
   getLevelProgress: (levelId: number) => LevelProgress | null
   isLevelUnlocked: (levelId: number) => boolean
   resetProgress: () => void
+  updateStreak: () => void
 }
 
 export const useProgressStore = create<ProgressStore>((set, get) => ({
@@ -62,6 +76,7 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
       saveToStorage(newState)
       return newState
     })
+    get().updateStreak()
   },
 
   setCurrentLevel(id) {
@@ -86,5 +101,20 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
     const fresh = defaultState()
     saveToStorage(fresh)
     set(fresh)
+  },
+
+  updateStreak() {
+    set(state => {
+      const today = toDateString(new Date())
+      if (state.lastPlayedDate === today) return state  // no change
+
+      const newStreak = state.lastPlayedDate === yesterday()
+        ? state.dailyStreak + 1
+        : 1
+      const newBest = Math.max(state.bestStreak, newStreak)
+      const newState = { ...state, dailyStreak: newStreak, bestStreak: newBest, lastPlayedDate: today }
+      saveToStorage(newState)
+      return newState
+    })
   },
 }))

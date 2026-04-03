@@ -3,6 +3,7 @@ import { HomeScreen } from './screens/HomeScreen'
 import { LevelMap } from './screens/LevelMap'
 import { GameScreen } from './screens/GameScreen'
 import { DailyScreen } from './screens/DailyScreen'
+import { StatsScreen } from './screens/StatsScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { useProgressStore } from './store/progressStore'
 import { useScreenTransition } from './hooks/useScreenTransition'
@@ -39,6 +40,7 @@ export default function App() {
               onPlay={() => goToGame(currentLevel || 1)}
               onMap={() => navigate('levelMap')}
               onDaily={() => navigate('daily' as Screen)}
+              onStats={() => navigate('stats')}
             />
           </div>
         )}
@@ -62,6 +64,11 @@ export default function App() {
         {(screen as string) === 'daily' && (
           <div key="daily" className={transitionClass}>
             <DailyScreen onBack={() => navigate('home')} />
+          </div>
+        )}
+        {screen === 'stats' && (
+          <div key="stats" className={transitionClass}>
+            <StatsScreen onBack={() => navigate('home')} />
           </div>
         )}
       </div>

@@ -59,11 +59,14 @@ export interface ProgressState {
   levels: Record<number, LevelProgress>
   unlockedThemes: string[]
   currentLevel: number
+  dailyStreak: number
+  bestStreak: number
+  lastPlayedDate: string  // 'YYYY-MM-DD'
 }
 
 // ─── UI State ─────────────────────────────────────────────────────────────────
 
-export type Screen = 'home' | 'levelMap' | 'game'
+export type Screen = 'home' | 'levelMap' | 'game' | 'stats'
 
 export type GamePhase =
   | 'IDLE'
