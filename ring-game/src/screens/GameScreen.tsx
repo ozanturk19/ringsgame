@@ -6,8 +6,10 @@ import { Tube } from '../components/Tube'
 import { TopBar } from '../components/TopBar'
 import { BottomBar } from '../components/BottomBar'
 import { WinOverlay } from '../components/WinOverlay'
+import { TutorialOverlay } from '../components/TutorialOverlay'
 import { ANIM } from '../constants/animations'
 import { useSound } from '../hooks/useSound'
+import { useTutorial } from '../hooks/useTutorial'
 
 interface GameScreenProps {
   levelId: number
@@ -38,6 +40,8 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
   const prevPhase = useRef(phase)
   const [celebrating, setCelebrating] = useState(false)
   const [showWinOverlay, setShowWinOverlay] = useState(false)
+
+  const { message: tutorialMessage, dismiss: dismissTutorial } = useTutorial(levelId)
 
   useEffect(() => {
     loadLevel(levelId)
@@ -127,6 +131,15 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
         canSkip={canSkip}
         onSkip={skip}
       />
+
+      {tutorialMessage && !showWinOverlay && (
+        <TutorialOverlay
+          message={tutorialMessage}
+          visible={true}
+          onDismiss={dismissTutorial}
+          position="bottom"
+        />
+      )}
 
       {showWinOverlay && (
         <WinOverlay
