@@ -3,6 +3,7 @@ import { useProgressStore } from '../store/progressStore'
 import { getTotalLevels } from '../game/levels'
 import { getMuted, setMuted } from '../hooks/useSound'
 import { getDailyRecord } from '../game/dailyChallenge'
+import { ThemePicker } from '../components/ThemePicker'
 
 interface HomeScreenProps {
   onPlay: () => void
@@ -147,6 +148,11 @@ export function HomeScreen({ onPlay, onMap, onDaily, onStats }: HomeScreenProps)
         >
           📊  İstatistikler
         </button>
+      </div>
+
+      {/* Theme picker */}
+      <div className="mt-8">
+        <ThemePicker />
       </div>
 
       {/* Footer */}

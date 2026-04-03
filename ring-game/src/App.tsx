@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { HomeScreen } from './screens/HomeScreen'
 import { LevelMap } from './screens/LevelMap'
 import { GameScreen } from './screens/GameScreen'
@@ -7,6 +7,7 @@ import { StatsScreen } from './screens/StatsScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { useProgressStore } from './store/progressStore'
 import { useScreenTransition } from './hooks/useScreenTransition'
+import { useThemeStore } from './store/themeStore'
 import type { Screen } from './types'
 import './index.css'
 
@@ -14,6 +15,11 @@ export default function App() {
   const { currentLevel, isLevelUnlocked } = useProgressStore()
   const { screen, navigate, exiting } = useScreenTransition('home')
   const [activeLevel, setActiveLevel] = useState(currentLevel || 1)
+  const { theme } = useThemeStore()
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   function goToGame(levelId: number) {
     if (!isLevelUnlocked(levelId)) return
