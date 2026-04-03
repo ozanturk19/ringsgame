@@ -8,7 +8,7 @@ set -euo pipefail
 
 VPS_HOST="135.181.206.109"
 VPS_USER="root"
-VPS_PORT="22"
+VPS_PORT=""
 GITHUB_REPO="ozanturk19/ringsgame"
 KEY_PATH="$HOME/.ssh/halka_deploy_ed25519"
 
