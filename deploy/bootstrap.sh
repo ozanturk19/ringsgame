@@ -31,6 +31,35 @@ for cmd in ssh ssh-keygen rsync curl git nc; do
   command -v "$cmd" &>/dev/null && success "$cmd" || die "$cmd bulunamadı — lütfen yükle"
 done
 
+# ── Node.js / npm otomatik kurulumu ──────────────────────────────────────────
+step "Node.js kontrol ediliyor"
+
+install_node() {
+  info "Node.js bulunamadı, nvm ile kuruluyor..."
+  # nvm: macOS ve Linux'ta sudo gerektirmez, kullanıcı dizinine kurar
+  export NVM_DIR="$HOME/.nvm"
+  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+  # nvm'yi bu shell'e yükle
+  # shellcheck source=/dev/null
+  \. "$NVM_DIR/nvm.sh"
+  nvm install --lts --no-progress
+  nvm use --lts
+}
+
+if command -v node &>/dev/null && command -v npm &>/dev/null; then
+  success "Node.js: $(node --version), npm: $(npm --version)"
+else
+  # nvm zaten kuruluysa sadece yükle
+  export NVM_DIR="$HOME/.nvm"
+  if [[ -f "$NVM_DIR/nvm.sh" ]]; then
+    \. "$NVM_DIR/nvm.sh"
+    nvm use --lts 2>/dev/null || nvm install --lts --no-progress
+  else
+    install_node
+  fi
+  command -v npm &>/dev/null && success "npm kuruldu: $(npm --version)" || die "npm kurulumu başarısız"
+fi
+
 # ── gh CLI otomatik kurulumu ──────────────────────────────────────────────────
 step "GitHub CLI (gh) kuruluyor"
 
