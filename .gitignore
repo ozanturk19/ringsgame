@@ -1,0 +1,6 @@
+# Deploy keys — asla commit edilmez
+deploy/deploy_key
+deploy/deploy_key.pub
+deploy/.deploy_key_private.pem
+deploy/.deploy_key_public.pem
+deploy/SECRETS.txt
