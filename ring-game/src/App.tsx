@@ -5,56 +5,64 @@ import { GameScreen } from './screens/GameScreen'
 import { DailyScreen } from './screens/DailyScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { useProgressStore } from './store/progressStore'
+import { useScreenTransition } from './hooks/useScreenTransition'
 import type { Screen } from './types'
 import './index.css'
 
 export default function App() {
   const { currentLevel, isLevelUnlocked } = useProgressStore()
-  const [screen, setScreen] = useState<Screen>('home')
+  const { screen, navigate, exiting } = useScreenTransition('home')
   const [activeLevel, setActiveLevel] = useState(currentLevel || 1)
 
   function goToGame(levelId: number) {
     if (!isLevelUnlocked(levelId)) return
     setActiveLevel(levelId)
-    setScreen('game')
+    navigate('game')
   }
 
   function goToNextLevel(nextId: number) {
     if (isLevelUnlocked(nextId)) {
       goToGame(nextId)
     } else {
-      setScreen('levelMap')
+      navigate('levelMap')
     }
   }
+
+  const transitionClass = exiting ? 'screen-exit' : 'screen-enter'
 
   return (
     <ErrorBoundary>
       <div className="game-bg">
         {screen === 'home' && (
-          <HomeScreen
-            onPlay={() => goToGame(currentLevel || 1)}
-            onMap={() => setScreen('levelMap')}
-            onDaily={() => setScreen('daily' as Screen)}
-          />
+          <div key="home" className={transitionClass}>
+            <HomeScreen
+              onPlay={() => goToGame(currentLevel || 1)}
+              onMap={() => navigate('levelMap')}
+              onDaily={() => navigate('daily' as Screen)}
+            />
+          </div>
         )}
-
         {screen === 'levelMap' && (
-          <LevelMap
-            onSelectLevel={goToGame}
-            onBack={() => setScreen('home')}
-          />
+          <div key="levelMap" className={transitionClass}>
+            <LevelMap
+              onSelectLevel={goToGame}
+              onBack={() => navigate('home')}
+            />
+          </div>
         )}
-
         {screen === 'game' && (
-          <GameScreen
-            levelId={activeLevel}
-            onBack={() => setScreen('levelMap')}
-            onNextLevel={goToNextLevel}
-          />
+          <div key="game" className={transitionClass}>
+            <GameScreen
+              levelId={activeLevel}
+              onBack={() => navigate('levelMap')}
+              onNextLevel={goToNextLevel}
+            />
+          </div>
         )}
-
         {(screen as string) === 'daily' && (
-          <DailyScreen onBack={() => setScreen('home')} />
+          <div key="daily" className={transitionClass}>
+            <DailyScreen onBack={() => navigate('home')} />
+          </div>
         )}
       </div>
     </ErrorBoundary>
