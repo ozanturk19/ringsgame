@@ -1,0 +1,81 @@
+name: CI / Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # ── Test + Build ────────────────────────────────────────────────────────────
+  ci:
+    name: Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ring-game/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ring-game
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: ring-game
+        run: npm test
+
+      - name: Production build
+        working-directory: ring-game
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: ring-game/dist/
+          retention-days: 1
+
+  # ── Deploy (main branch only) ───────────────────────────────────────────────
+  deploy:
+    name: Deploy to VPS
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Deploy via rsync
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          # Write SSH key
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Add host to known_hosts
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+          # Sync built files
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            dist/ \
+            "$VPS_USER@$VPS_HOST:/var/www/ring-game/"
+
+          echo "Deploy complete ✓"

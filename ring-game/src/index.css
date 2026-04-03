@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/* ── Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  background: #0f0f23;
+  color: white;
+}
+
+#root {
+  height: 100%;
+  min-height: 100dvh;
+}
+
+/* ── Game Background ──────────────────────────────────────────────── */
+.game-bg {
+  background: radial-gradient(ellipse at 50% 0%, #1a1a3e 0%, #0f0f23 70%);
+  min-height: 100dvh;
+}
+
+/* ── Animations ───────────────────────────────────────────────────── */
+
+/* Invalid move shake */
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(-8px); }
+  30%  { transform: translateX(8px); }
+  45%  { transform: translateX(-6px); }
+  60%  { transform: translateX(6px); }
+  75%  { transform: translateX(-3px); }
+  90%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-shake {
+  animation: shake 380ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Confetti fall */
+@keyframes confetti-fall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall linear forwards;
+}
+
+/* Level entrance stagger */
+@keyframes tube-enter {
+  from { opacity: 0; transform: translateY(24px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-tube-enter {
+  animation: tube-enter 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Win star pop */
+@keyframes star-pop {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  60%  { transform: scale(1.3) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-star-pop {
+  animation: star-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Ring settle bounce on placement */
+@keyframes ring-settle {
+  0%   { transform: translateY(-12px) scaleY(0.92); }
+  50%  { transform: translateY(3px)   scaleY(1.04); }
+  75%  { transform: translateY(-2px)  scaleY(0.98); }
+  100% { transform: translateY(0)     scaleY(1); }
+}
+
+.animate-ring-settle {
+  animation: ring-settle 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+/* ── iOS PWA safe area ────────────────────────────────────────────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* ── Responsive tube layout helpers ──────────────────────────────── */
+@media (max-width: 374px) {
+  /* Very small phones: tighter gaps */
+  .tube-grid { gap: 6px !important; }
+}
+
+@media (min-width: 768px) {
+  /* Tablet/Desktop: wider game area */
+  .game-area { max-width: 640px; margin: 0 auto; }
+}
+
+/* ── Touch feedback ───────────────────────────────────────────────── */
+button, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
