@@ -32,15 +32,19 @@ apt-get install -y -qq nginx ufw rsync curl
 success "Paketler hazır"
 
 # ── Firewall ──────────────────────────────────────────────────────────────────
-info "UFW firewall yapılandırılıyor..."
-ufw --force reset
+info "UFW firewall yapılandırılıyor (mevcut kurallar korunuyor)..."
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow ssh
 ufw allow 'Nginx HTTP'
 ufw allow 'Nginx HTTPS'
+ufw allow 8001/tcp comment 'Weather'
+ufw allow 8002/tcp comment 'BTC Dashboard'
+ufw allow 8003/tcp comment 'BIST30'
+ufw allow 8004/tcp comment 'Paper Bot'
+ufw allow 8005/tcp comment 'Poly Dashboard'
 ufw --force enable
-success "Firewall: SSH + HTTP + HTTPS açık"
+success "Firewall: SSH + HTTP + HTTPS + servis portları açık"
 
 # ── Web root ──────────────────────────────────────────────────────────────────
 info "Web dizini oluşturuluyor: $WEBROOT"
