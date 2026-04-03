@@ -14,11 +14,12 @@ info()    { echo -e "${CYAN}▶${NC} $1"; }
 success() { echo -e "${GREEN}✓${NC} $1"; }
 
 WEBROOT="/var/www/ring-game"
+# Sunucunun public IP'sini otomatik tespit et
+SERVER_IP=$(curl -fsSL https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
 
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║     Halka Oyunu — VPS Kurulum             ║"
-echo "║     135.181.206.109:22                    ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
@@ -63,10 +64,10 @@ success "Web root hazır: $WEBROOT"
 # ── Nginx config ──────────────────────────────────────────────────────────────
 info "Nginx yapılandırılıyor..."
 
-cat > /etc/nginx/sites-available/ring-game << 'NGINXEOF'
+cat > /etc/nginx/sites-available/ring-game << NGINXEOF
 server {
     listen 80;
-    server_name 135.181.206.109 _;
+    server_name $SERVER_IP _;
 
     root /var/www/ring-game;
     index index.html;
@@ -82,7 +83,7 @@ server {
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
-        try_files $uri =404;
+        try_files \$uri =404;
     }
 
     location /sw.js {
@@ -95,7 +96,7 @@ server {
     }
 
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files \$uri \$uri/ /index.html;
         expires -1;
         add_header Cache-Control "no-store";
     }
@@ -115,7 +116,7 @@ echo "╔═══════════════════════�
 echo "║           VPS Kurulum Tamamlandı! 🎉                  ║"
 echo "╚══════════════════════════════════════════════════════╝"
 echo ""
-echo -e "  ${GREEN}Adres   :${NC} http://135.181.206.109"
+echo -e "  ${GREEN}Adres   :${NC} http://$SERVER_IP"
 echo -e "  ${GREEN}Webroot :${NC} $WEBROOT"
 echo ""
 echo "  Sıradaki: GitHub'da VPS_SSH_KEY secret'ı ekle,"
