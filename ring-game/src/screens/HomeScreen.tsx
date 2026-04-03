@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { useProgressStore } from '../store/progressStore'
 import { getTotalLevels } from '../game/levels'
 import { getMuted, setMuted } from '../hooks/useSound'
+import { getDailyRecord } from '../game/dailyChallenge'
 
 interface HomeScreenProps {
   onPlay: () => void
   onMap: () => void
+  onDaily: () => void
 }
 
 const LOGO_COLORS = [
@@ -15,9 +17,10 @@ const LOGO_COLORS = [
   { id: 'yellow', hex: '#EAB308' },
 ]
 
-export function HomeScreen({ onPlay, onMap }: HomeScreenProps) {
+export function HomeScreen({ onPlay, onMap, onDaily }: HomeScreenProps) {
   const { levels } = useProgressStore()
   const [muted, setMutedState] = useState(getMuted())
+  const dailyRecord = getDailyRecord()
 
   const completedCount = Object.values(levels).filter(l => l.completed).length
   const totalLevels = getTotalLevels()
@@ -121,6 +124,19 @@ export function HomeScreen({ onPlay, onMap }: HomeScreenProps) {
           style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
         >
           🗺  Level Haritası
+        </button>
+
+        <button
+          onClick={onDaily}
+          className="w-full py-4 rounded-3xl font-semibold text-lg active:scale-95 transition-all duration-150 relative"
+          style={{
+            background: 'rgba(168,85,247,0.15)',
+            border: `1px solid ${dailyRecord?.completed ? 'rgba(52,211,153,0.5)' : 'rgba(168,85,247,0.4)'}`,
+          }}
+        >
+          {dailyRecord?.completed
+            ? `✅  Günlük Tamamlandı ${dailyRecord.stars}⭐`
+            : '🌟  Günlük Bulmaca'}
         </button>
       </div>
 

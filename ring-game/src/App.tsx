@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { HomeScreen } from './screens/HomeScreen'
 import { LevelMap } from './screens/LevelMap'
 import { GameScreen } from './screens/GameScreen'
+import { DailyScreen } from './screens/DailyScreen'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { useProgressStore } from './store/progressStore'
 import type { Screen } from './types'
 import './index.css'
@@ -9,7 +11,7 @@ import './index.css'
 export default function App() {
   const { currentLevel, isLevelUnlocked } = useProgressStore()
   const [screen, setScreen] = useState<Screen>('home')
-  const [activeLevel, setActiveLevel] = useState(currentLevel)
+  const [activeLevel, setActiveLevel] = useState(currentLevel || 1)
 
   function goToGame(levelId: number) {
     if (!isLevelUnlocked(levelId)) return
@@ -26,28 +28,35 @@ export default function App() {
   }
 
   return (
-    <div className="game-bg">
-      {screen === 'home' && (
-        <HomeScreen
-          onPlay={() => goToGame(currentLevel || 1)}
-          onMap={() => setScreen('levelMap')}
-        />
-      )}
+    <ErrorBoundary>
+      <div className="game-bg">
+        {screen === 'home' && (
+          <HomeScreen
+            onPlay={() => goToGame(currentLevel || 1)}
+            onMap={() => setScreen('levelMap')}
+            onDaily={() => setScreen('daily' as Screen)}
+          />
+        )}
 
-      {screen === 'levelMap' && (
-        <LevelMap
-          onSelectLevel={goToGame}
-          onBack={() => setScreen('home')}
-        />
-      )}
+        {screen === 'levelMap' && (
+          <LevelMap
+            onSelectLevel={goToGame}
+            onBack={() => setScreen('home')}
+          />
+        )}
 
-      {screen === 'game' && (
-        <GameScreen
-          levelId={activeLevel}
-          onBack={() => setScreen('levelMap')}
-          onNextLevel={goToNextLevel}
-        />
-      )}
-    </div>
+        {screen === 'game' && (
+          <GameScreen
+            levelId={activeLevel}
+            onBack={() => setScreen('levelMap')}
+            onNextLevel={goToNextLevel}
+          />
+        )}
+
+        {(screen as string) === 'daily' && (
+          <DailyScreen onBack={() => setScreen('home')} />
+        )}
+      </div>
+    </ErrorBoundary>
   )
 }

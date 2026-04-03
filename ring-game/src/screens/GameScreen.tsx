@@ -23,10 +23,12 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
     shakingTubeIndex,
     hintTubeFrom,
     hintTubeTo,
+    canSkip,
     loadLevel,
     selectTube,
     undo,
     reset,
+    skip,
     useHint,
     clearHint,
   } = useGameStore()
@@ -35,30 +37,19 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
   const prevMoveCount = useRef(0)
   const prevPhase = useRef(phase)
 
-  // Load level on mount / levelId change
   useEffect(() => {
     loadLevel(levelId)
     prevMoveCount.current = 0
   }, [levelId])
 
-  // Sound reactions to state changes
   useEffect(() => {
     if (!gameState) return
     const moves = getMoveCount(gameState)
 
-    if (phase === 'TUBE_SELECTED' && prevPhase.current === 'IDLE') {
-      play('pick')
-    }
-    if (moves > prevMoveCount.current) {
-      play('place')
-      prevMoveCount.current = moves
-    }
-    if (phase === 'INVALID_SHAKE') {
-      play('invalid')
-    }
-    if (phase === 'LEVEL_COMPLETE' && prevPhase.current !== 'LEVEL_COMPLETE') {
-      play('win')
-    }
+    if (phase === 'TUBE_SELECTED' && prevPhase.current === 'IDLE') play('pick')
+    if (moves > prevMoveCount.current) { play('place'); prevMoveCount.current = moves }
+    if (phase === 'INVALID_SHAKE') play('invalid')
+    if (phase === 'LEVEL_COMPLETE' && prevPhase.current !== 'LEVEL_COMPLETE') play('win')
     prevPhase.current = phase
   }, [phase, gameState])
 
@@ -66,20 +57,16 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
 
   const moveCount = getMoveCount(gameState)
   const level = getLevel(levelId)
+  const optimalMoves = level?.optimalMoves ?? moveCount
   const stars = phase === 'LEVEL_COMPLETE'
-    ? calculateStars(moveCount, level?.optimalMoves ?? moveCount)
+    ? calculateStars(moveCount, optimalMoves)
     : 0
 
   const tubes = gameState.tubes
   const tubeCount = tubes.length
-
-  // Responsive tube sizing
   const tubeSize = tubeCount <= 5 ? 'lg' : tubeCount <= 7 ? 'md' : 'sm'
-
-  // Wrap into 2 rows for 7+ tubes on small screens
   const needsWrap = tubeCount >= 7
 
-  // Find which tube most recently got a ring (for settle animation)
   const lastMove = gameState.moves.at(-1)
   const newestTubeIdx = lastMove?.toTube ?? -1
   const newestRingIdx = newestTubeIdx >= 0 ? tubes[newestTubeIdx].rings.length - 1 : -1
@@ -89,10 +76,10 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
       <TopBar levelId={levelId} moveCount={moveCount} onBack={onBack} />
 
       {/* Game area */}
-      <div className="flex-1 flex items-center justify-center px-3 py-6 overflow-hidden">
+      <div className="flex-1 flex items-center justify-center px-3 py-4 overflow-hidden game-area">
         <div
           className={[
-            'flex items-end justify-center',
+            'flex items-end justify-center tube-grid',
             needsWrap ? 'flex-wrap gap-x-2 gap-y-8 max-w-xs' : 'gap-3',
           ].join(' ')}
         >
@@ -106,10 +93,7 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
               isHintFrom={hintTubeFrom === i}
               isHintTo={hintTubeTo === i}
               isComplete={isTubeComplete(tube)}
-              onClick={(idx) => {
-                clearHint()
-                selectTube(idx)
-              }}
+              onClick={(idx) => { clearHint(); selectTube(idx) }}
               entranceDelay={i * ANIM.LEVEL_ENTRANCE_STAGGER}
               size={tubeSize}
               newestRingIndex={i === newestTubeIdx ? newestRingIdx : undefined}
@@ -124,6 +108,8 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
         onReset={reset}
         onHint={useHint}
         hintActive={hintTubeFrom !== null}
+        canSkip={canSkip}
+        onSkip={skip}
       />
 
       {phase === 'LEVEL_COMPLETE' && (
@@ -131,6 +117,7 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
           levelId={levelId}
           stars={stars}
           moveCount={moveCount}
+          optimalMoves={optimalMoves}
           onNext={() => onNextLevel(levelId + 1)}
           onMap={onBack}
           onReplay={() => loadLevel(levelId)}

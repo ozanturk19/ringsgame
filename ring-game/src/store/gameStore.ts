@@ -18,26 +18,27 @@ import { getHint } from '../game/solver'
 import { getLevel } from '../game/levels'
 import { useProgressStore } from './progressStore'
 
+// After this many resets/undos the skip button unlocks
+const SKIP_THRESHOLD = 3
+
 interface GameStore {
-  // Active level
   levelId: number | null
   initialTubes: Tube[]
-
-  // Game state
   gameState: GameState | null
   phase: GamePhase
   selectedTubeIndex: number | null
   shakingTubeIndex: number | null
   hintTubeFrom: number | null
   hintTubeTo: number | null
-  skipCount: number
+  resetCount: number       // resets on current level — unlocks skip
+  canSkip: boolean
 
-  // Actions
   loadLevel: (levelId: number) => void
   selectTube: (index: number) => void
   clearSelection: () => void
   undo: () => void
   reset: () => void
+  skip: () => void
   useHint: () => void
   clearHint: () => void
 }
@@ -51,7 +52,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   shakingTubeIndex: null,
   hintTubeFrom: null,
   hintTubeTo: null,
-  skipCount: 0,
+  resetCount: 0,
+  canSkip: false,
 
   loadLevel(levelId) {
     const level = getLevel(levelId)
@@ -67,7 +69,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       shakingTubeIndex: null,
       hintTubeFrom: null,
       hintTubeTo: null,
-      skipCount: 0,
+      resetCount: 0,
+      canSkip: false,
     })
     useProgressStore.getState().setCurrentLevel(levelId)
   },
@@ -80,12 +83,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // First selection
     if (selectedTubeIndex === null) {
       const tube = gameState.tubes[index]
-      if (tube.rings.length === 0) return   // can't pick from empty tube
+      if (tube.rings.length === 0) return
       set({ selectedTubeIndex: index, phase: 'TUBE_SELECTED', hintTubeFrom: null, hintTubeTo: null })
       return
     }
 
-    // Same tube tapped — deselect
+    // Deselect
     if (selectedTubeIndex === index) {
       set({ selectedTubeIndex: null, phase: 'IDLE' })
       return
@@ -96,7 +99,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const tubes = gameState.tubes
 
     if (!isValidMove(tubes, from, to)) {
-      // Shake feedback
       set({ shakingTubeIndex: to, selectedTubeIndex: null, phase: 'INVALID_SHAKE' })
       setTimeout(() => {
         set(s => s.phase === 'INVALID_SHAKE' ? { shakingTubeIndex: null, phase: 'IDLE' } : {})
@@ -104,7 +106,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return
     }
 
-    // Apply move
     const newState = applyMoveToState(gameState, from, to)
     const won = isWinState(newState.tubes)
 
@@ -136,7 +137,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   reset() {
-    const { initialTubes } = get()
+    const { initialTubes, resetCount } = get()
+    const newCount = resetCount + 1
     set({
       gameState: createInitialGameState(initialTubes),
       phase: 'IDLE',
@@ -144,7 +146,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       shakingTubeIndex: null,
       hintTubeFrom: null,
       hintTubeTo: null,
+      resetCount: newCount,
+      canSkip: newCount >= SKIP_THRESHOLD,
     })
+  },
+
+  skip() {
+    const { levelId, canSkip } = get()
+    if (!canSkip || levelId === null) return
+    // Mark as skipped (1 star, 999 moves) so next level unlocks
+    useProgressStore.getState().completeLevel(levelId, 1, 999)
+    // Load next level
+    const nextId = levelId + 1
+    const nextLevel = getLevel(nextId)
+    if (nextLevel) get().loadLevel(nextId)
   },
 
   useHint() {
