@@ -31,35 +31,6 @@ for cmd in ssh ssh-keygen rsync curl git nc; do
   command -v "$cmd" &>/dev/null && success "$cmd" || die "$cmd bulunamadı — lütfen yükle"
 done
 
-# ── Node.js / npm otomatik kurulumu ──────────────────────────────────────────
-step "Node.js kontrol ediliyor"
-
-install_node() {
-  info "Node.js bulunamadı, nvm ile kuruluyor..."
-  # nvm: macOS ve Linux'ta sudo gerektirmez, kullanıcı dizinine kurar
-  export NVM_DIR="$HOME/.nvm"
-  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-  # nvm'yi bu shell'e yükle
-  # shellcheck source=/dev/null
-  \. "$NVM_DIR/nvm.sh"
-  nvm install --lts --no-progress
-  nvm use --lts
-}
-
-if command -v node &>/dev/null && command -v npm &>/dev/null; then
-  success "Node.js: $(node --version), npm: $(npm --version)"
-else
-  # nvm zaten kuruluysa sadece yükle
-  export NVM_DIR="$HOME/.nvm"
-  if [[ -f "$NVM_DIR/nvm.sh" ]]; then
-    \. "$NVM_DIR/nvm.sh"
-    nvm use --lts 2>/dev/null || nvm install --lts --no-progress
-  else
-    install_node
-  fi
-  command -v npm &>/dev/null && success "npm kuruldu: $(npm --version)" || die "npm kurulumu başarısız"
-fi
-
 # ── gh CLI otomatik kurulumu ──────────────────────────────────────────────────
 step "GitHub CLI (gh) kuruluyor"
 
@@ -210,28 +181,26 @@ gh secret set VPS_USER     --body "$VPS_USER"  --repo "$GITHUB_REPO"
 gh secret set VPS_SSH_PORT --body "$VPS_PORT"  --repo "$GITHUB_REPO"
 success "4 secret eklendi"
 
-# ── Build + Deploy ────────────────────────────────────────────────────────────
-step "İlk build ve deploy"
+# ── GitHub Actions ile Deploy ─────────────────────────────────────────────────
+step "GitHub Actions deploy tetikleniyor"
 
-REPO_DIR="/tmp/ringsgame-bootstrap"
-rm -rf "$REPO_DIR"
-info "Repo klonlanıyor..."
-git clone "https://github.com/$GITHUB_REPO.git" "$REPO_DIR" --depth 1
+info "workflow_dispatch ile deploy başlatılıyor..."
+gh workflow run deploy.yml --repo "$GITHUB_REPO" --ref main
 
-info "npm build yapılıyor..."
-(cd "$REPO_DIR/ring-game" && npm ci --silent && npm run build --silent)
+# Run ID'yi al (birkaç saniye bekle, workflow başlaması zaman alır)
+sleep 6
+RUN_ID=$(gh run list --repo "$GITHUB_REPO" --workflow deploy.yml \
+  --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null || true)
 
-info "VPS'e rsync ile gönderiliyor..."
-rsync -az --delete --checksum \
-  -e "ssh -i $KEY_PATH -p $VPS_PORT -o StrictHostKeyChecking=no" \
-  "$REPO_DIR/ring-game/dist/" \
-  "$VPS_USER@$VPS_HOST:/var/www/ring-game/"
-
-ssh -i "$KEY_PATH" -p "$VPS_PORT" -o StrictHostKeyChecking=no \
-  "$VPS_USER@$VPS_HOST" "ls /var/www/ring-game/index.html"
-success "Deploy tamamlandı"
-
-rm -rf "$REPO_DIR"
+if [[ -n "$RUN_ID" ]]; then
+  info "Workflow Run #$RUN_ID izleniyor (birkaç dakika sürebilir)..."
+  gh run watch "$RUN_ID" --repo "$GITHUB_REPO" --exit-status \
+    && success "GitHub Actions deploy tamamlandı!" \
+    || die "Deploy başarısız → https://github.com/$GITHUB_REPO/actions adresini kontrol et"
+else
+  warn "Run ID alınamadı — deploy arka planda devam ediyor"
+  info "Takip et: https://github.com/$GITHUB_REPO/actions"
+fi
 
 # ── Özet ─────────────────────────────────────────────────────────────────────
 echo ""
