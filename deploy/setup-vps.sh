@@ -15,9 +15,6 @@ success() { echo -e "${GREEN}✓${NC} $1"; }
 
 WEBROOT="/var/www/ring-game"
 
-# GitHub Actions deploy public key
-DEPLOY_PUBLIC_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM+5VMkLJfvuyJMgkKIhDTWtawugz5i1LyMPQKSFb41M halka-deploy@github-actions"
-
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║     Halka Oyunu — VPS Kurulum             ║"
@@ -111,21 +108,6 @@ nginx -t
 systemctl enable nginx
 systemctl reload nginx
 success "Nginx çalışıyor (HTTP)"
-
-# ── Deploy SSH key ────────────────────────────────────────────────────────────
-info "GitHub Actions deploy key ekleniyor..."
-mkdir -p /root/.ssh
-chmod 700 /root/.ssh
-touch /root/.ssh/authorized_keys
-chmod 600 /root/.ssh/authorized_keys
-
-# Daha önce eklenmemişse ekle
-if ! grep -qF "halka-deploy@github-actions" /root/.ssh/authorized_keys 2>/dev/null; then
-  echo "$DEPLOY_PUBLIC_KEY" >> /root/.ssh/authorized_keys
-  success "Deploy key eklendi"
-else
-  success "Deploy key zaten var"
-fi
 
 # ── Özet ─────────────────────────────────────────────────────────────────────
 echo ""
