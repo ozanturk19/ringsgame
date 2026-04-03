@@ -21,6 +21,9 @@ import { useProgressStore } from './progressStore'
 // After this many resets/undos the skip button unlocks
 const SKIP_THRESHOLD = 3
 
+// Module-level timeout handle for hint auto-clear
+let hintClearTimeout: ReturnType<typeof setTimeout> | null = null
+
 interface GameStore {
   levelId: number | null
   initialTubes: Tube[]
@@ -59,6 +62,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const level = getLevel(levelId)
     if (!level) return
 
+    if (hintClearTimeout !== null) {
+      clearTimeout(hintClearTimeout)
+      hintClearTimeout = null
+    }
     const initialTubes = level.tubes.map(t => ({ ...t, rings: [...t.rings] }))
     set({
       levelId,
@@ -138,6 +145,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   reset() {
     const { initialTubes, resetCount } = get()
+    if (hintClearTimeout !== null) {
+      clearTimeout(hintClearTimeout)
+      hintClearTimeout = null
+    }
     const newCount = resetCount + 1
     set({
       gameState: createInitialGameState(initialTubes),
@@ -167,10 +178,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!gameState) return
     const hint = getHint(gameState.tubes)
     if (!hint) return
+    // Clear any existing hint timeout before setting a new one
+    if (hintClearTimeout !== null) {
+      clearTimeout(hintClearTimeout)
+      hintClearTimeout = null
+    }
     set({ hintTubeFrom: hint[0], hintTubeTo: hint[1] })
+    hintClearTimeout = setTimeout(() => {
+      set({ hintTubeFrom: null, hintTubeTo: null })
+      hintClearTimeout = null
+    }, 3000)
   },
 
   clearHint() {
+    if (hintClearTimeout !== null) {
+      clearTimeout(hintClearTimeout)
+      hintClearTimeout = null
+    }
     set({ hintTubeFrom: null, hintTubeTo: null })
   },
 }))

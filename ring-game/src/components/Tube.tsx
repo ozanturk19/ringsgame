@@ -10,6 +10,7 @@ interface TubeProps {
   isHintTo: boolean
   isComplete: boolean
   celebrating?: boolean
+  isDropTarget?: boolean
   onClick: (index: number) => void
   entranceDelay?: number
   size?: 'sm' | 'md' | 'lg'
@@ -28,6 +29,7 @@ export function Tube({
   isHintTo,
   isComplete,
   celebrating = false,
+  isDropTarget = false,
   onClick,
   entranceDelay = 0,
   size = 'md',
@@ -67,6 +69,7 @@ export function Tube({
         isShaking ? 'animate-shake' : '',
         tube.locked ? 'cursor-not-allowed' : '',
         celebrating ? 'tube-celebrating' : '',
+        isDropTarget && !tube.locked && !isComplete ? 'tube-drop-target' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -149,7 +152,7 @@ export function Tube({
       {/* Hint arrow above tube */}
       {(isHintFrom || isHintTo) && (
         <div
-          className={`absolute -top-7 left-1/2 -translate-x-1/2 text-lg animate-bounce ${isHintFrom ? 'text-yellow-300' : 'text-green-400'}`}
+          className={`hint-arrow absolute -top-7 left-1/2 -translate-x-1/2 text-lg animate-bounce ${isHintFrom ? 'text-yellow-300' : 'text-green-400'}`}
           style={{ filter: 'drop-shadow(0 0 6px currentColor)' }}
         >
           {isHintFrom ? '↑' : '↓'}

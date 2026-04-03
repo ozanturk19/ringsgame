@@ -108,6 +108,7 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
               isHintTo={hintTubeTo === i}
               isComplete={isTubeComplete(tube)}
               celebrating={celebrating}
+              isDropTarget={phase === 'TUBE_SELECTED' && i !== selectedTubeIndex}
               onClick={(idx) => { clearHint(); selectTube(idx) }}
               entranceDelay={i * ANIM.LEVEL_ENTRANCE_STAGGER}
               size={tubeSize}
