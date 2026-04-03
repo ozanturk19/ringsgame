@@ -63,21 +63,22 @@ jobs:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_HOST: ${{ secrets.VPS_HOST || '135.181.206.109' }}
           VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+          SSH_PORT: ${{ secrets.VPS_SSH_PORT || '8006' }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-          # Trust the VPS host key
-          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # Trust the VPS host key (custom port)
+          ssh-keyscan -p "$SSH_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
           # Sync built files to web root
           rsync -az --delete --checksum \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no" \
             dist/ \
             "$VPS_USER@$VPS_HOST:/var/www/ring-game/"
 
           # Verify deploy
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o StrictHostKeyChecking=no \
             "$VPS_USER@$VPS_HOST" \
             "ls -la /var/www/ring-game/index.html && echo 'Deploy verified ✓'"
