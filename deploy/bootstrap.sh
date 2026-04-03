@@ -8,7 +8,7 @@ set -euo pipefail
 
 VPS_HOST="135.181.206.109"
 VPS_USER="root"
-VPS_PORT="8006"
+VPS_PORT=""          # Otomatik bulunacak
 GITHUB_REPO="ozanturk19/ringsgame"
 KEY_PATH="$HOME/.ssh/halka_deploy_ed25519"
 
@@ -97,11 +97,46 @@ if ! gh auth status &>/dev/null; then
 fi
 success "GitHub auth OK"
 
-# ── VPS bağlantı testi ────────────────────────────────────────────────────────
-step "VPS bağlantısı test ediliyor ($VPS_HOST:$VPS_PORT)"
-timeout 10 bash -c "echo >/dev/tcp/$VPS_HOST/$VPS_PORT" 2>/dev/null \
+# ── SSH portu bul ─────────────────────────────────────────────────────────────
+step "SSH portu bulunuyor ($VPS_HOST)"
+
+find_ssh_port() {
+  local common_ports=(22 2222 2200 4022 8022 8006 1022 10022)
+  for p in "${common_ports[@]}"; do
+    info "Port $p deneniyor..."
+    if timeout 5 bash -c "echo >/dev/tcp/$VPS_HOST/$p" 2>/dev/null; then
+      # Gerçekten SSH mi?
+      banner=$(timeout 5 bash -c "cat < /dev/tcp/$VPS_HOST/$p" 2>/dev/null | head -1 || true)
+      if echo "$banner" | grep -qi "ssh"; then
+        echo "$p"
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+
+if [[ -z "$VPS_PORT" ]]; then
+  if AUTO_PORT=$(find_ssh_port 2>/dev/null); then
+    VPS_PORT="$AUTO_PORT"
+    success "SSH portu bulundu: $VPS_PORT"
+  else
+    warn "SSH portu otomatik bulunamadı."
+    echo ""
+    echo "  Hetzner/Proxmox kullanıyorsan:"
+    echo "  - Proxmox web arayüzünden VM'e gir (port 8006 web UI'dır, SSH değil)"
+    echo "  - Server'ın SSH portu genellikle 22'dir"
+    echo "  - Hetzner Cloud Console > Server > SSH"
+    echo ""
+    read -rp "SSH portu: " VPS_PORT
+    [[ -n "$VPS_PORT" ]] || die "Port boş bırakılamaz"
+  fi
+fi
+
+# Son kontrol
+timeout 8 bash -c "echo >/dev/tcp/$VPS_HOST/$VPS_PORT" 2>/dev/null \
   && success "Port $VPS_PORT erişilebilir" \
-  || die "Port $VPS_PORT erişilemiyor. VPS'in açık olduğunu kontrol et."
+  || die "Port $VPS_PORT erişilemiyor."
 
 # ── SSH Deploy Key ─────────────────────────────────────────────────────────────
 step "SSH deploy key"
