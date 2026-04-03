@@ -39,17 +39,17 @@ install_gh() {
   os="$(uname -s)"
 
   if [[ "$os" == "Darwin" ]]; then
-    if command -v brew &>/dev/null; then
-      info "Homebrew ile gh kuruluyor..."
-      brew install gh
-    else
-      # Homebrew yoksa direkt binary
-      info "Homebrew bulunamadı, binary indiriliyor..."
-      GH_VER=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | tr -d v)
-      curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VER}/gh_${GH_VER}_macOS_amd64.tar.gz" \
-        | tar -xz -C /tmp
-      sudo mv "/tmp/gh_${GH_VER}_macOS_amd64/bin/gh" /usr/local/bin/gh
+    # Homebrew yoksa önce onu kur
+    if ! command -v brew &>/dev/null; then
+      info "Homebrew kuruluyor..."
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      # Apple Silicon path
+      [[ -f /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+      # Intel path
+      [[ -f /usr/local/bin/brew ]] && eval "$(/usr/local/bin/brew shellenv)"
     fi
+    info "Homebrew ile gh kuruluyor..."
+    brew install gh
 
   elif [[ "$os" == "Linux" ]]; then
     if command -v apt-get &>/dev/null; then
