@@ -133,10 +133,13 @@ if [[ -z "$VPS_PORT" ]]; then
   fi
 fi
 
-# Son kontrol
-timeout 8 bash -c "echo >/dev/tcp/$VPS_HOST/$VPS_PORT" 2>/dev/null \
-  && success "Port $VPS_PORT erişilebilir" \
-  || die "Port $VPS_PORT erişilemiyor."
+info "SSH bağlantısı deneniyor ($VPS_HOST:$VPS_PORT)..."
+# TCP probe (bazı firewall'lar bunu engeller, sadece uyarı)
+if timeout 8 bash -c "echo >/dev/tcp/$VPS_HOST/$VPS_PORT" 2>/dev/null; then
+  success "Port $VPS_PORT erişilebilir"
+else
+  warn "TCP probe başarısız — SSH doğrudan deneniyor..."
+fi
 
 # ── SSH Deploy Key ─────────────────────────────────────────────────────────────
 step "SSH deploy key"
