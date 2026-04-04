@@ -82,7 +82,7 @@ export function Tube({
       style={{
         height: tubeH,
         width: fullWidth ? '100%' : tubeW,
-        maxWidth: fullWidth ? TUBE_W['lg'] * 1.2 : undefined,
+        maxWidth: fullWidth ? TUBE_W['lg'] : undefined,
         padding: '6px 4px 4px',
         borderRadius: '999px 999px 40% 40%',
         border: `2px solid ${borderColor}`,
@@ -123,7 +123,7 @@ export function Tube({
           key={`e-${i}`}
           style={{
             height: slotH - 10,
-            width: tubeW - 16,
+            width: fullWidth ? 'calc(100% - 16px)' : tubeW - 16,
             borderRadius: 999,
             border: '1px solid rgba(255,255,255,0.08)',
             flexShrink: 0,
@@ -136,7 +136,7 @@ export function Tube({
         className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
         style={{
           height: 4,
-          width: tubeW - 12,
+          width: fullWidth ? 'calc(100% - 12px)' : tubeW - 12,
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
         }}
       />

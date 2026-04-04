@@ -83,22 +83,16 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
   const tubes = gameState.tubes
   const tubeCount = tubes.length
 
-  // ── Responsive tube sizing ────────────────────────────────────────
-  // Ring boyutları: sm=52px, md=68px, lg=84px (Ring.tsx SIZE_MAP)
-  // Tube yatay iç boşluk: 8px (4px her yan padding)
-  // Ring seçim eşiği: tubeW - 8 >= ring.outer.width
   const needsWrap = tubeCount > 5
-  const numCols  = needsWrap ? Math.ceil(tubeCount / 2) : tubeCount
-  const hPad = 24  // px-2 → 8px her iki yanda + 8px safety margin
-  const gap  = 6
-  const tubeW = Math.min(
-    Math.floor((window.innerWidth - hPad - gap * (numCols - 1)) / numCols),
-    96,
-  )
-  const innerW = tubeW - 8
-  const size: 'sm' | 'md' | 'lg' = innerW >= 84 ? 'lg' : innerW >= 68 ? 'md' : 'sm'
+  const numCols = needsWrap ? Math.ceil(tubeCount / 2) : tubeCount
+  const gap = 6
+  // Size based on column count only — no JS viewport measurement.
+  // CSS Grid 1fr handles actual widths; we just pick ring size conservatively.
+  // numCols 5 → sm (52px ring, ~67px cell on 375px phone)
+  // numCols 4 → md (68px ring, ~85px cell on 375px phone)
+  // numCols ≤3 → lg (84px ring, fits easily)
+  const size: 'sm' | 'md' | 'lg' = numCols >= 5 ? 'sm' : numCols >= 4 ? 'md' : 'lg'
   const slotH = size === 'lg' ? 44 : size === 'md' ? 36 : 28
-  // ──────────────────────────────────────────────────────────────────
 
   const lastMove = gameState.moves.at(-1)
   const newestTubeIdx = lastMove?.toTube ?? -1
@@ -111,11 +105,14 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
       {/* Game area */}
       <div className="flex-1 flex items-center justify-center px-2 py-4 game-area" style={{ overflow: 'hidden' }}>
         <div
-          className="tube-grid flex flex-wrap items-end justify-center"
+          className="tube-grid w-full"
           style={{
-            gap,
+            display: 'grid',
+            gridTemplateColumns: `repeat(${numCols}, 1fr)`,
+            columnGap: gap,
             rowGap: slotH * 3,
-            maxWidth: '100%',
+            alignItems: 'end',
+            justifyItems: 'center',
           }}
         >
           {tubes.map((tube, i) => (
@@ -133,8 +130,8 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
               onClick={(idx) => { clearHint(); selectTube(idx) }}
               entranceDelay={i * ANIM.LEVEL_ENTRANCE_STAGGER}
               size={size}
-              tubeWidth={tubeW}
               slotHeight={slotH}
+              fullWidth={true}
               newestRingIndex={i === newestTubeIdx ? newestRingIdx : undefined}
             />
           ))}
