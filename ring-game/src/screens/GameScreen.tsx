@@ -85,11 +85,14 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
 
   const needsWrap = tubeCount > 5
   const cols = needsWrap ? Math.ceil(tubeCount / 2) : tubeCount
-  const padding = 16   // px-2 = 8px each side
-  const gapSize = 4    // gap between tubes
+  const gapSize = 4
+  // clientWidth is more reliable than innerWidth on mobile browsers
+  // extra 16px safety margin so edge tubes never clip
+  const screenW = document.documentElement.clientWidth || window.innerWidth
+  const padding = 32
 
   // Single source of truth: all sizes derived from screen width
-  const tubeW = Math.floor((window.innerWidth - padding - gapSize * (cols - 1)) / cols)
+  const tubeW = Math.floor((screenW - padding - gapSize * (cols - 1)) / cols)
   const ringW = tubeW - 12      // 6px padding each side inside tube
   const ringH = Math.round(ringW * 0.47)
   const slotH = ringH + 4
