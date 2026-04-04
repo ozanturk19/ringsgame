@@ -89,7 +89,7 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
   // Ring seçim eşiği: tubeW - 8 >= ring.outer.width
   const needsWrap = tubeCount > 5
   const numCols  = needsWrap ? Math.ceil(tubeCount / 2) : tubeCount
-  const hPad = 16  // px-2 → 8px her iki yanda
+  const hPad = 24  // px-2 → 8px her iki yanda + 8px safety margin
   const gap  = 6
   const tubeW = Math.min(
     Math.floor((window.innerWidth - hPad - gap * (numCols - 1)) / numCols),
@@ -109,13 +109,13 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
       <TopBar levelId={levelId} moveCount={moveCount} onBack={onBack} />
 
       {/* Game area */}
-      <div className="flex-1 flex items-center justify-center px-2 py-4 game-area">
+      <div className="flex-1 flex items-center justify-center px-2 py-4 game-area" style={{ overflow: 'hidden' }}>
         <div
           className="tube-grid flex flex-wrap items-end justify-center"
           style={{
             gap,
             rowGap: slotH * 3,
-            width: tubeW * numCols + gap * (numCols - 1),
+            maxWidth: '100%',
           }}
         >
           {tubes.map((tube, i) => (

@@ -44,7 +44,7 @@ export default function App() {
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-white/40 text-sm">Yükleniyor...</div></div>}>
       <div className="game-bg">
         {screen === 'home' && (
-          <div key="home" className={transitionClass}>
+          <div key="home" className={transitionClass} style={{ width: '100%' }}>
             <HomeScreen
               onPlay={() => goToGame(currentLevel || 1)}
               onMap={() => navigate('levelMap')}
@@ -55,7 +55,7 @@ export default function App() {
           </div>
         )}
         {screen === 'levelMap' && (
-          <div key="levelMap" className={transitionClass}>
+          <div key="levelMap" className={transitionClass} style={{ width: '100%' }}>
             <LevelMap
               onSelectLevel={goToGame}
               onBack={() => navigate('home')}
@@ -63,7 +63,7 @@ export default function App() {
           </div>
         )}
         {screen === 'game' && (
-          <div key="game" className={transitionClass}>
+          <div key="game" className={transitionClass} style={{ width: '100%' }}>
             <GameScreen
               levelId={activeLevel}
               onBack={() => navigate('levelMap')}
@@ -72,17 +72,17 @@ export default function App() {
           </div>
         )}
         {(screen as string) === 'daily' && (
-          <div key="daily" className={transitionClass}>
+          <div key="daily" className={transitionClass} style={{ width: '100%' }}>
             <DailyScreen onBack={() => navigate('home')} />
           </div>
         )}
         {screen === 'stats' && (
-          <div key="stats" className={transitionClass}>
+          <div key="stats" className={transitionClass} style={{ width: '100%' }}>
             <StatsScreen onBack={() => navigate('home')} />
           </div>
         )}
         {screen === 'timed' && (
-          <div key="timed" className={transitionClass}>
+          <div key="timed" className={transitionClass} style={{ width: '100%' }}>
             <TimedModeScreen onBack={() => navigate('home')} />
           </div>
         )}
