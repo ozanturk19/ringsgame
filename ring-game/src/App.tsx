@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { HomeScreen } from './screens/HomeScreen'
-import { LevelMap } from './screens/LevelMap'
 import { GameScreen } from './screens/GameScreen'
-import { DailyScreen } from './screens/DailyScreen'
-import { StatsScreen } from './screens/StatsScreen'
-import { TimedModeScreen } from './screens/TimedModeScreen'
+// Lazy load these:
+const LevelMap = lazy(() => import('./screens/LevelMap').then(m => ({ default: m.LevelMap })))
+const DailyScreen = lazy(() => import('./screens/DailyScreen').then(m => ({ default: m.DailyScreen })))
+const StatsScreen = lazy(() => import('./screens/StatsScreen').then(m => ({ default: m.StatsScreen })))
+const TimedModeScreen = lazy(() => import('./screens/TimedModeScreen').then(m => ({ default: m.TimedModeScreen })))
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { useProgressStore } from './store/progressStore'
 import { useScreenTransition } from './hooks/useScreenTransition'
@@ -40,6 +41,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-white/40 text-sm">Yükleniyor...</div></div>}>
       <div className="game-bg">
         {screen === 'home' && (
           <div key="home" className={transitionClass}>
@@ -85,6 +87,7 @@ export default function App() {
           </div>
         )}
       </div>
+      </Suspense>
     </ErrorBoundary>
   )
 }

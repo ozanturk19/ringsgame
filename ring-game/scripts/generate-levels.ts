@@ -7,7 +7,7 @@
  * JSON olarak kaydeder. Runtime'da sıfır hesaplama yapılır.
  */
 
-import { writeFileSync } from 'fs'
+import { writeFileSync, existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
 import { generateLevel } from '../src/game/levelGenerator'
 import { solve } from '../src/game/solver'
@@ -37,6 +37,19 @@ const FALLBACK_TUBES: Tube[] = [
   { rings: [{ color: 'red', type: 'normal' }], capacity: 4, locked: false },
   { rings: [], capacity: 4, locked: false },
 ]
+
+const outPath = resolve(import.meta.dirname, '../src/game/levels-data.json')
+
+// Skip if already generated (file committed to git)
+if (existsSync(outPath)) {
+  try {
+    const existing = JSON.parse(readFileSync(outPath, 'utf8'))
+    if (Array.isArray(existing) && existing.length === 200) {
+      console.log('✓ levels-data.json zaten mevcut (200 level), atlanıyor')
+      process.exit(0)
+    }
+  } catch { /* regenerate */ }
+}
 
 console.log('Level\'lar üretiliyor...')
 const start = Date.now()
@@ -87,7 +100,6 @@ for (const spec of SPECS) {
 }
 
 const elapsed = ((Date.now() - start) / 1000).toFixed(1)
-const outPath = resolve(import.meta.dirname, '../src/game/levels-data.json')
 writeFileSync(outPath, JSON.stringify(levels, null, 0))
 
 console.log(`\n✓ 200 level üretildi (${elapsed}s)${fallbackCount ? `, ${fallbackCount} fallback` : ''}`)
