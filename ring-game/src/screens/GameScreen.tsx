@@ -84,15 +84,15 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
   const tubeCount = tubes.length
 
   const needsWrap = tubeCount > 5
-  const numCols = needsWrap ? Math.ceil(tubeCount / 2) : tubeCount
-  const gap = 6
-  // Size based on column count only — no JS viewport measurement.
-  // CSS Grid 1fr handles actual widths; we just pick ring size conservatively.
-  // numCols 5 → sm (52px ring, ~67px cell on 375px phone)
-  // numCols 4 → md (68px ring, ~85px cell on 375px phone)
-  // numCols ≤3 → lg (84px ring, fits easily)
-  const size: 'sm' | 'md' | 'lg' = numCols >= 5 ? 'sm' : numCols >= 4 ? 'md' : 'lg'
-  const slotH = size === 'lg' ? 44 : size === 'md' ? 36 : 28
+  const cols = needsWrap ? Math.ceil(tubeCount / 2) : tubeCount
+  const padding = 16   // px-2 = 8px each side
+  const gapSize = 4    // gap between tubes
+
+  // Single source of truth: all sizes derived from screen width
+  const tubeW = Math.floor((window.innerWidth - padding - gapSize * (cols - 1)) / cols)
+  const ringW = tubeW - 12      // 6px padding each side inside tube
+  const ringH = Math.round(ringW * 0.47)
+  const slotH = ringH + 4
 
   const lastMove = gameState.moves.at(-1)
   const newestTubeIdx = lastMove?.toTube ?? -1
@@ -102,18 +102,11 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
     <div className="min-h-screen flex flex-col select-none">
       <TopBar levelId={levelId} moveCount={moveCount} onBack={onBack} />
 
-      {/* Game area */}
-      <div className="flex-1 flex items-center justify-center px-2 py-4 game-area" style={{ overflow: 'hidden' }}>
+      {/* Game area — no overflow:hidden so nothing gets clipped */}
+      <div className="flex-1 flex items-center justify-center px-2 py-4 game-area">
         <div
-          className="tube-grid w-full"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${numCols}, 1fr)`,
-            columnGap: gap,
-            rowGap: slotH * 3,
-            alignItems: 'end',
-            justifyItems: 'center',
-          }}
+          className="tube-grid flex flex-wrap items-end justify-center"
+          style={{ gap: gapSize, rowGap: slotH * 3 }}
         >
           {tubes.map((tube, i) => (
             <Tube
@@ -129,9 +122,10 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
               isDropTarget={phase === 'TUBE_SELECTED' && i !== selectedTubeIndex}
               onClick={(idx) => { clearHint(); selectTube(idx) }}
               entranceDelay={i * ANIM.LEVEL_ENTRANCE_STAGGER}
-              size={size}
+              tubeWidth={tubeW}
+              ringWidth={ringW}
+              ringHeight={ringH}
               slotHeight={slotH}
-              fullWidth={true}
               newestRingIndex={i === newestTubeIdx ? newestRingIdx : undefined}
             />
           ))}

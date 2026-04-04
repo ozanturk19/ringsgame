@@ -4,22 +4,22 @@ import { ANIM, EASING } from '../constants/animations'
 
 interface RingProps {
   ring: RingType
-  size?: 'sm' | 'md' | 'lg'
+  ringWidth: number
+  ringHeight: number
   lifted?: boolean
-  isNew?: boolean       // just landed — triggers settle bounce
+  isNew?: boolean
   entranceDelay?: number
 }
 
-const SIZE_MAP = {
-  sm: { outer: { height: 24, width: 52 }, hole: { height: 10, width: 24 } },
-  md: { outer: { height: 32, width: 68 }, hole: { height: 14, width: 32 } },
-  lg: { outer: { height: 40, width: 84 }, hole: { height: 18, width: 40 } },
-}
-
-export function Ring({ ring, size = 'md', lifted = false, isNew = false, entranceDelay = 0 }: RingProps) {
+export function Ring({ ring, ringWidth, ringHeight, lifted = false, isNew = false, entranceDelay = 0 }: RingProps) {
   const color = COLORS[ring.color]
-  const dims = SIZE_MAP[size]
   const isBlocker = ring.type === 'blocker'
+
+  const holeW = Math.round(ringWidth * 0.47)
+  const holeH = Math.round(ringHeight * 0.44)
+  const liftY = Math.round(ringHeight * 0.35)
+  const shineLeft = Math.round(ringWidth * 0.19)
+  const shineW = Math.round(ringWidth * 0.34)
 
   return (
     <div
@@ -31,14 +31,14 @@ export function Ring({ ring, size = 'md', lifted = false, isNew = false, entranc
         .filter(Boolean)
         .join(' ')}
       style={{
-        height: dims.outer.height,
-        width: dims.outer.width,
+        height: ringHeight,
+        width: ringWidth,
         flexShrink: 0,
         background: `radial-gradient(circle at 32% 32%, ${color.shine}, ${color.hex} 55%, ${color.dark})`,
         boxShadow: lifted
           ? `0 10px 24px ${color.dark}88, inset 0 1px 3px ${color.shine}99`
           : `0 2px 8px ${color.dark}55, inset 0 1px 2px ${color.shine}66`,
-        transform: lifted ? `translateY(-${size === 'lg' ? 14 : size === 'sm' ? 8 : 10}px) scale(1.06)` : 'translateY(0) scale(1)',
+        transform: lifted ? `translateY(-${liftY}px) scale(1.06)` : 'translateY(0) scale(1)',
         transition: `transform ${ANIM.RING_LIFT}ms ${EASING.SPRING}, box-shadow ${ANIM.RING_LIFT}ms ${EASING.SMOOTH}`,
         transitionDelay: `${entranceDelay}ms`,
         animationDelay: `${entranceDelay}ms`,
@@ -48,8 +48,8 @@ export function Ring({ ring, size = 'md', lifted = false, isNew = false, entranc
       <div
         className="rounded-full"
         style={{
-          height: dims.hole.height,
-          width: dims.hole.width,
+          height: holeH,
+          width: holeW,
           background: 'rgba(0,0,0,0.6)',
           boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.8)',
         }}
@@ -59,9 +59,9 @@ export function Ring({ ring, size = 'md', lifted = false, isNew = false, entranc
         className="absolute rounded-full pointer-events-none"
         style={{
           top: 4,
-          left: size === 'sm' ? 10 : 14,
+          left: shineLeft,
           height: 4,
-          width: size === 'sm' ? 18 : size === 'lg' ? 28 : 22,
+          width: shineW,
           background: color.shine,
           opacity: 0.45,
           filter: 'blur(1px)',

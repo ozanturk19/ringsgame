@@ -15,13 +15,18 @@ interface TubeProps {
   entranceDelay?: number
   size?: 'sm' | 'md' | 'lg'
   tubeWidth?: number
+  ringWidth?: number
+  ringHeight?: number
   slotHeight?: number
-  fullWidth?: boolean   // CSS Grid 1fr modunda true
   newestRingIndex?: number
 }
 
-const SLOT_H: Record<'sm' | 'md' | 'lg', number> = { sm: 28, md: 36, lg: 44 }
-const TUBE_W: Record<'sm' | 'md' | 'lg', number> = { sm: 56, md: 72, lg: 88 }
+// Fallback dimensions when explicit ringWidth/ringHeight not provided (e.g. DailyScreen)
+const SIZE_DEFAULTS: Record<'sm' | 'md' | 'lg', { tubeW: number; ringW: number; ringH: number; slotH: number }> = {
+  sm: { tubeW: 56, ringW: 44, ringH: 20, slotH: 24 },
+  md: { tubeW: 72, ringW: 60, ringH: 28, slotH: 32 },
+  lg: { tubeW: 88, ringW: 76, ringH: 36, slotH: 40 },
+}
 
 export function Tube({
   tube,
@@ -37,12 +42,16 @@ export function Tube({
   entranceDelay = 0,
   size = 'md',
   tubeWidth,
+  ringWidth,
+  ringHeight,
   slotHeight,
-  fullWidth = false,
   newestRingIndex,
 }: TubeProps) {
-  const tubeW = tubeWidth ?? TUBE_W[size]
-  const slotH = slotHeight ?? SLOT_H[size]
+  const defaults = SIZE_DEFAULTS[size]
+  const tubeW = tubeWidth ?? defaults.tubeW
+  const ringW = ringWidth ?? defaults.ringW
+  const ringH = ringHeight ?? defaults.ringH
+  const slotH = slotHeight ?? defaults.slotH
   const tubeH = tube.capacity * slotH + 20
 
   const borderColor = isSelected
@@ -81,8 +90,7 @@ export function Tube({
         .join(' ')}
       style={{
         height: tubeH,
-        width: fullWidth ? '100%' : tubeW,
-        maxWidth: fullWidth ? TUBE_W['lg'] : undefined,
+        width: tubeW,
         padding: '6px 4px 4px',
         borderRadius: '999px 999px 40% 40%',
         border: `2px solid ${borderColor}`,
@@ -98,6 +106,7 @@ export function Tube({
         animationDelay: `${entranceDelay}ms`,
         opacity: tube.locked ? 0.55 : 1,
         gap: 4,
+        flexShrink: 0,
       }}
       onClick={() => !tube.locked && onClick(index)}
       role="button"
@@ -110,7 +119,8 @@ export function Tube({
           <Ring
             key={ri}
             ring={ring}
-            size={size}
+            ringWidth={ringW}
+            ringHeight={ringH}
             lifted={isSelected && isTop}
             isNew={ri === newestRingIndex}
           />
@@ -123,7 +133,7 @@ export function Tube({
           key={`e-${i}`}
           style={{
             height: slotH - 10,
-            width: fullWidth ? 'calc(100% - 16px)' : tubeW - 16,
+            width: tubeW - 16,
             borderRadius: 999,
             border: '1px solid rgba(255,255,255,0.08)',
             flexShrink: 0,
@@ -136,7 +146,7 @@ export function Tube({
         className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
         style={{
           height: 4,
-          width: fullWidth ? 'calc(100% - 12px)' : tubeW - 12,
+          width: tubeW - 12,
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
         }}
       />
