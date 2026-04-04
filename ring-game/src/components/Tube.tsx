@@ -14,8 +14,9 @@ interface TubeProps {
   onClick: (index: number) => void
   entranceDelay?: number
   size?: 'sm' | 'md' | 'lg'
-  tubeWidth?: number    // dynamic override (responsive)
-  slotHeight?: number   // dynamic override (responsive)
+  tubeWidth?: number
+  slotHeight?: number
+  fullWidth?: boolean   // CSS Grid 1fr modunda true
   newestRingIndex?: number
 }
 
@@ -37,13 +38,12 @@ export function Tube({
   size = 'md',
   tubeWidth,
   slotHeight,
+  fullWidth = false,
   newestRingIndex,
 }: TubeProps) {
   const tubeW = tubeWidth ?? TUBE_W[size]
   const slotH = slotHeight ?? SLOT_H[size]
   const tubeH = tube.capacity * slotH + 20
-  // Map dynamic width back to Ring size
-  const ringSize: 'sm' | 'md' | 'lg' = tubeW >= 80 ? 'lg' : tubeW >= 64 ? 'md' : 'sm'
 
   const borderColor = isSelected
     ? 'rgba(255,255,255,0.9)'
@@ -81,7 +81,8 @@ export function Tube({
         .join(' ')}
       style={{
         height: tubeH,
-        width: tubeW,
+        width: fullWidth ? '100%' : tubeW,
+        maxWidth: fullWidth ? TUBE_W['lg'] * 1.2 : undefined,
         padding: '6px 4px 4px',
         borderRadius: '999px 999px 40% 40%',
         border: `2px solid ${borderColor}`,
@@ -109,7 +110,7 @@ export function Tube({
           <Ring
             key={ri}
             ring={ring}
-            size={ringSize}
+            size={size}
             lifted={isSelected && isTop}
             isNew={ri === newestRingIndex}
           />
