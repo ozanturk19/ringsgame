@@ -43,6 +43,19 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
 
   const { message: tutorialMessage, dismiss: dismissTutorial } = useTutorial(levelId)
 
+  // Gerçek container genişliğini ölç (window.innerWidth güvenilir değil)
+  const gameAreaRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+  useEffect(() => {
+    const el = gameAreaRef.current
+    if (!el) return
+    const update = () => setContainerWidth(el.clientWidth)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   useEffect(() => {
     loadLevel(levelId)
     prevMoveCount.current = 0
@@ -84,16 +97,14 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
   const tubeCount = tubes.length
 
   // ── Responsive tube sizing ─────────────────────────────────────────
-  // Her zaman ekranı aşmayacak şekilde tube genişliği hesapla
-  const screenW = typeof window !== 'undefined' ? window.innerWidth : 375
   const needsWrap = tubeCount > 5
   const numCols = needsWrap ? Math.ceil(tubeCount / 2) : tubeCount
-  const hPad = 32       // px-4 her iki yanda
-  const gapPx = 8       // tube arası boşluk
-  const dynTubeW = Math.min(
-    Math.floor((screenW - hPad - gapPx * (numCols - 1)) / numCols),
-    96,                  // masaüstünde max cap
-  )
+  const gapPx = 8
+  // containerWidth: ResizeObserver'dan gelir; 0 ise henüz ölçülmedi (gizle)
+  const avail = containerWidth > 0 ? containerWidth : null
+  const dynTubeW = avail
+    ? Math.min(Math.floor((avail - gapPx * (numCols - 1)) / numCols), 96)
+    : 0
   const dynSlotH = Math.max(22, Math.round(dynTubeW * 0.46))
   // ──────────────────────────────────────────────────────────────────
 
@@ -105,36 +116,42 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
     <div className="min-h-screen flex flex-col select-none">
       <TopBar levelId={levelId} moveCount={moveCount} onBack={onBack} />
 
-      {/* Game area */}
-      <div className="flex-1 flex items-center justify-center px-4 py-4 overflow-hidden game-area">
-        <div
-          className="flex items-end justify-center flex-wrap tube-grid"
-          style={{
-            gap: gapPx,
-            rowGap: dynTubeW * 1.3,
-            maxWidth: numCols * dynTubeW + (numCols - 1) * gapPx,
-          }}
-        >
-          {tubes.map((tube, i) => (
-            <Tube
-              key={i}
-              tube={tube}
-              index={i}
-              isSelected={selectedTubeIndex === i}
-              isShaking={shakingTubeIndex === i}
-              isHintFrom={hintTubeFrom === i}
-              isHintTo={hintTubeTo === i}
-              isComplete={isTubeComplete(tube)}
-              celebrating={celebrating}
-              isDropTarget={phase === 'TUBE_SELECTED' && i !== selectedTubeIndex}
-              onClick={(idx) => { clearHint(); selectTube(idx) }}
-              entranceDelay={i * ANIM.LEVEL_ENTRANCE_STAGGER}
-              tubeWidth={dynTubeW}
-              slotHeight={dynSlotH}
-              newestRingIndex={i === newestTubeIdx ? newestRingIdx : undefined}
-            />
-          ))}
-        </div>
+      {/* Game area — ref ile gerçek genişlik ölçülür */}
+      <div
+        ref={gameAreaRef}
+        className="flex-1 flex items-center justify-center py-4 overflow-hidden game-area"
+        style={{ width: '100%' }}
+      >
+        {dynTubeW > 0 && (
+          <div
+            className="flex items-end justify-center flex-wrap tube-grid"
+            style={{
+              gap: gapPx,
+              rowGap: dynTubeW * 1.3,
+              width: numCols * dynTubeW + (numCols - 1) * gapPx,
+            }}
+          >
+            {tubes.map((tube, i) => (
+              <Tube
+                key={i}
+                tube={tube}
+                index={i}
+                isSelected={selectedTubeIndex === i}
+                isShaking={shakingTubeIndex === i}
+                isHintFrom={hintTubeFrom === i}
+                isHintTo={hintTubeTo === i}
+                isComplete={isTubeComplete(tube)}
+                celebrating={celebrating}
+                isDropTarget={phase === 'TUBE_SELECTED' && i !== selectedTubeIndex}
+                onClick={(idx) => { clearHint(); selectTube(idx) }}
+                entranceDelay={i * ANIM.LEVEL_ENTRANCE_STAGGER}
+                tubeWidth={dynTubeW}
+                slotHeight={dynSlotH}
+                newestRingIndex={i === newestTubeIdx ? newestRingIdx : undefined}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <BottomBar
