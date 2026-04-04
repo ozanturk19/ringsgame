@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { getMoveCount, calculateStars, isTubeComplete } from '../game/engine'
 import { getLevel } from '../game/levels'
@@ -40,6 +40,19 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
   const prevPhase = useRef(phase)
   const [celebrating, setCelebrating] = useState(false)
   const [showWinOverlay, setShowWinOverlay] = useState(false)
+
+  // Measure actual rendered grid width so tubes never overflow
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [gridW, setGridW] = useState(0)
+  useLayoutEffect(() => {
+    const el = gridRef.current
+    if (!el) return
+    const update = () => setGridW(el.offsetWidth)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const { message: tutorialMessage, dismiss: dismissTutorial } = useTutorial(levelId)
 
@@ -85,15 +98,13 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
 
   const needsWrap = tubeCount > 5
   const cols = needsWrap ? Math.ceil(tubeCount / 2) : tubeCount
-  const gapSize = 4
-  // clientWidth is more reliable than innerWidth on mobile browsers
-  // extra 16px safety margin so edge tubes never clip
-  const screenW = document.documentElement.clientWidth || window.innerWidth
-  const padding = 32
+  const GAP = 4
 
-  // Single source of truth: all sizes derived from screen width
-  const tubeW = Math.floor((screenW - padding - gapSize * (cols - 1)) / cols)
-  const ringW = tubeW - 12      // 6px padding each side inside tube
+  // gridW comes from ResizeObserver measuring the actual rendered container.
+  // On the very first render (gridW=0) fall back to a safe estimate.
+  const effectiveW = gridW > 0 ? gridW : Math.max(document.documentElement.clientWidth - 16, 200)
+  const tubeW = Math.floor((effectiveW - GAP * (cols - 1)) / cols)
+  const ringW = tubeW - 12   // 6px inner padding each side
   const ringH = Math.round(ringW * 0.47)
   const slotH = ringH + 4
 
@@ -105,11 +116,12 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
     <div className="min-h-screen flex flex-col select-none">
       <TopBar levelId={levelId} moveCount={moveCount} onBack={onBack} />
 
-      {/* Game area — no overflow:hidden so nothing gets clipped */}
+      {/* Game area */}
       <div className="flex-1 flex items-center justify-center px-2 py-4 game-area">
         <div
-          className="tube-grid flex flex-wrap items-end justify-center"
-          style={{ gap: gapSize, rowGap: slotH * 3 }}
+          ref={gridRef}
+          className="tube-grid w-full flex flex-wrap items-end justify-center"
+          style={{ gap: GAP, rowGap: slotH * 3 }}
         >
           {tubes.map((tube, i) => (
             <Tube
