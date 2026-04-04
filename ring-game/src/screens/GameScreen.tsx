@@ -82,8 +82,20 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
 
   const tubes = gameState.tubes
   const tubeCount = tubes.length
-  const tubeSize = tubeCount <= 5 ? 'lg' : tubeCount <= 7 ? 'md' : 'sm'
-  const needsWrap = tubeCount >= 7
+
+  // ── Responsive tube sizing ─────────────────────────────────────────
+  // Her zaman ekranı aşmayacak şekilde tube genişliği hesapla
+  const screenW = typeof window !== 'undefined' ? window.innerWidth : 375
+  const needsWrap = tubeCount > 5
+  const numCols = needsWrap ? Math.ceil(tubeCount / 2) : tubeCount
+  const hPad = 32       // px-4 her iki yanda
+  const gapPx = 8       // tube arası boşluk
+  const dynTubeW = Math.min(
+    Math.floor((screenW - hPad - gapPx * (numCols - 1)) / numCols),
+    96,                  // masaüstünde max cap
+  )
+  const dynSlotH = Math.max(22, Math.round(dynTubeW * 0.46))
+  // ──────────────────────────────────────────────────────────────────
 
   const lastMove = gameState.moves.at(-1)
   const newestTubeIdx = lastMove?.toTube ?? -1
@@ -94,12 +106,14 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
       <TopBar levelId={levelId} moveCount={moveCount} onBack={onBack} />
 
       {/* Game area */}
-      <div className="flex-1 flex items-center justify-center px-3 py-4 overflow-hidden game-area">
+      <div className="flex-1 flex items-center justify-center px-4 py-4 overflow-hidden game-area">
         <div
-          className={[
-            'flex items-end justify-center tube-grid',
-            needsWrap ? 'flex-wrap gap-x-2 gap-y-8 max-w-xs' : 'gap-3',
-          ].join(' ')}
+          className="flex items-end justify-center flex-wrap tube-grid"
+          style={{
+            gap: gapPx,
+            rowGap: dynTubeW * 1.3,
+            maxWidth: numCols * dynTubeW + (numCols - 1) * gapPx,
+          }}
         >
           {tubes.map((tube, i) => (
             <Tube
@@ -115,7 +129,8 @@ export function GameScreen({ levelId, onBack, onNextLevel }: GameScreenProps) {
               isDropTarget={phase === 'TUBE_SELECTED' && i !== selectedTubeIndex}
               onClick={(idx) => { clearHint(); selectTube(idx) }}
               entranceDelay={i * ANIM.LEVEL_ENTRANCE_STAGGER}
-              size={tubeSize}
+              tubeWidth={dynTubeW}
+              slotHeight={dynSlotH}
               newestRingIndex={i === newestTubeIdx ? newestRingIdx : undefined}
             />
           ))}

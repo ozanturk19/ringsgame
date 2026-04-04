@@ -14,11 +14,13 @@ interface TubeProps {
   onClick: (index: number) => void
   entranceDelay?: number
   size?: 'sm' | 'md' | 'lg'
-  newestRingIndex?: number   // index of ring that just landed for settle anim
+  tubeWidth?: number    // dynamic override (responsive)
+  slotHeight?: number   // dynamic override (responsive)
+  newestRingIndex?: number
 }
 
 const SLOT_H: Record<'sm' | 'md' | 'lg', number> = { sm: 28, md: 36, lg: 44 }
-const TUBE_W: Record<'sm' | 'md' | 'lg', number> = { sm: 64, md: 80, lg: 96 }
+const TUBE_W: Record<'sm' | 'md' | 'lg', number> = { sm: 56, md: 72, lg: 88 }
 
 export function Tube({
   tube,
@@ -33,11 +35,15 @@ export function Tube({
   onClick,
   entranceDelay = 0,
   size = 'md',
+  tubeWidth,
+  slotHeight,
   newestRingIndex,
 }: TubeProps) {
-  const slotH = SLOT_H[size]
-  const tubeW = TUBE_W[size]
+  const tubeW = tubeWidth ?? TUBE_W[size]
+  const slotH = slotHeight ?? SLOT_H[size]
   const tubeH = tube.capacity * slotH + 20
+  // Map dynamic width back to Ring size
+  const ringSize: 'sm' | 'md' | 'lg' = tubeW >= 80 ? 'lg' : tubeW >= 64 ? 'md' : 'sm'
 
   const borderColor = isSelected
     ? 'rgba(255,255,255,0.9)'
@@ -103,7 +109,7 @@ export function Tube({
           <Ring
             key={ri}
             ring={ring}
-            size={size}
+            size={ringSize}
             lifted={isSelected && isTop}
             isNew={ri === newestRingIndex}
           />
